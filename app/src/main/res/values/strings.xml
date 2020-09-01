@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">bookaroom</string>
+    <string name="LOGIN_FAILED">Wrong username or password</string>
+    <string name="LOGIN_SUCCESS">Login successful!</string>
+    <string name="LOGIN_INVALID_INPUT">Please enter your username and password</string>
+</resources>
