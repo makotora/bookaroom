@@ -1,5 +1,6 @@
 package com.bookaroom.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -15,8 +16,6 @@ import com.bookaroom.utils.Utils;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-
-import static com.bookaroom.utils.Constants.AUTHORIZATION_HEADER;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -36,6 +35,10 @@ public class LoginActivity extends AppCompatActivity {
         findViewById(R.id.btnLogin).setOnClickListener((view) -> {
             login();
         });
+
+        findViewById(R.id.textRegister).setOnClickListener((view) -> {
+            startRegisterActivity();
+        });
     }
 
     private void login() {
@@ -51,7 +54,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private boolean validInput(String username, String password) {
-        return username != null && !username.trim().isEmpty() && password != null && !password.trim().isEmpty();
+        return !Utils.isNullOrEmpty(username) && !Utils.isNullOrEmpty(password);
     }
 
     private void loginInternal(String username, String password) {
@@ -59,16 +62,26 @@ public class LoginActivity extends AppCompatActivity {
         call.enqueue(new Callback() {
             @Override
             public void onResponse(Call call, Response response) {
-                Toast.makeText(LoginActivity.this, R.string.LOGIN_SUCCESS, Toast.LENGTH_SHORT).show();
-                Toast.makeText(LoginActivity.this, response.headers().get(AUTHORIZATION_HEADER), Toast.LENGTH_SHORT).show();
+                if (response.isSuccessful()) {
+                    Toast.makeText(LoginActivity.this, R.string.LOGIN_SUCCESS, Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    Toast.makeText(LoginActivity.this, R.string.LOGIN_FAILED, Toast.LENGTH_SHORT).show();
+                }
+                //Toast.makeText(LoginActivity.this, response.headers().get(AUTHORIZATION_HEADER), Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onFailure(Call call, Throwable t) {
                 Toast.makeText(LoginActivity.this, t.getMessage(), Toast.LENGTH_SHORT).show();
-                Toast.makeText(LoginActivity.this, R.string.LOGIN_FAILED, Toast.LENGTH_SHORT).show();
+                Toast.makeText(LoginActivity.this, R.string.LOGIN_FAILED_FAILURE, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void startRegisterActivity() {
+        Intent registerIntent = new Intent(LoginActivity.this, RegisterActivity.class);
+        LoginActivity.this.startActivity(registerIntent);
     }
 
 }

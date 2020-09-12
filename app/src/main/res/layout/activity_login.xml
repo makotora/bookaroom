@@ -48,11 +48,27 @@
             android:layout_height="wrap_content"
             android:text="Login" />
 
-        <Button
-            android:id="@+id/btnRegister"
+        <TableLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        <TableRow
+            android:id="@+id/tableRowRegister"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Register" />
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/textRegister"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:cursorVisible="true"
+                android:text="@string/REGISTER_TEXT" />
+        </TableRow>
+
+        </TableLayout>
+
 
     </LinearLayout>
 

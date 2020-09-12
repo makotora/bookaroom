@@ -3,6 +3,7 @@
     package="com.bookaroom">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
         android:allowBackup="true"
@@ -11,14 +12,17 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name="com.bookaroom.activities.LoginActivity">
+        <activity
+            android:name=".activities.SearchActivity"
+            android:label="@string/title_activity_search"></activity>
+        <activity android:name=".activities.LoginActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
-
             </intent-filter>
         </activity>
+        <activity android:name=".activities.RegisterActivity" />
     </application>
 
 </manifest>
