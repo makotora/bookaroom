@@ -7,9 +7,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.MotionEvent;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.ScrollView;
 import android.widget.Spinner;
 
 import com.bookaroom.R;
@@ -55,6 +58,8 @@ public class HostActivity extends AppCompatActivity {
 
         initializeMainImageView();
         initializeAdditionalImagesView();
+
+        overrideScrollOnAvailabilityRanges();
     }
 
     private void initializeAvailabilityRangesView() {
@@ -148,5 +153,28 @@ public class HostActivity extends AppCompatActivity {
         SelectedImageInfo selectedImageInfo = ImageSelectionHelper.getSelectedImageInfo(this, data);
         additionalImages.add(selectedImageInfo);
         additionalImagesAdapter.notifyDataSetChanged();
+    }
+
+
+    private void overrideScrollOnAvailabilityRanges() {
+        ScrollView parentScroll = (ScrollView) findViewById(R.id.host_scrollView);
+        ListView childScroll = availabilityRangesListView;
+
+        parentScroll.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                childScroll.getParent().requestDisallowInterceptTouchEvent(false);
+                return false;
+            }
+        });
+
+        childScroll.setOnTouchListener(new View.OnTouchListener() {
+
+            public boolean onTouch(View v, MotionEvent event)
+            {
+                v.getParent().requestDisallowInterceptTouchEvent(true);
+                return false;
+            }
+        });
     }
 }
