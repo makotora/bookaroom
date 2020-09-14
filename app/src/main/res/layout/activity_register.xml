@@ -25,7 +25,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/REGISTER_USERNAME" />
+            android:text="@string/register_username" />
 
         <EditText
             android:id="@+id/edtUsername"
@@ -35,7 +35,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/REGISTER_PASSWORD" />
+            android:text="@string/register_password" />
 
         <EditText
             android:id="@+id/edtPassword"
@@ -46,7 +46,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/REGISTER_CONFIRM_PASSWORD" />
+            android:text="@string/register_confirm_password" />
 
         <EditText
             android:id="@+id/edtPasswordConfirm"
@@ -57,7 +57,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/REGISTER_NAME" />
+            android:text="@string/register_name" />
 
         <EditText
             android:id="@+id/edtName"
@@ -68,7 +68,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/REGISTER_SURNAME" />
+            android:text="@string/register_surname" />
 
         <EditText
             android:id="@+id/edtSurname"
@@ -79,7 +79,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/REGISTER_EMAIL" />
+            android:text="@string/register_email" />
 
         <EditText
             android:id="@+id/edtEmail"
@@ -90,7 +90,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/REGISTER_PHONE" />
+            android:text="@string/register_phone" />
 
         <EditText
             android:id="@+id/edtPhone"
@@ -101,7 +101,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/REGISTER_ROLE" />
+            android:text="@string/register_role" />
 
         <Spinner
             android:id="@+id/spinnerRole"
@@ -113,7 +113,7 @@
             android:id="@+id/btnRegister"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/REGISTER_BUTTON" />
+            android:text="@string/register_button" />
 
     </LinearLayout>
 

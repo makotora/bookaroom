@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="From: "/>
+
+    <EditText
+        android:id="@+id/edtFrom"
+        android:layout_width="0dp"
+        android:layout_height="40dp"
+        android:layout_weight="0.40"
+        android:focusable="false"
+        android:longClickable="false"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="To: "/>
+
+    <EditText
+        android:id="@+id/edtTo"
+        android:layout_width="0dp"
+        android:layout_height="40dp"
+        android:layout_weight="0.40"
+        android:focusable="false"
+        android:longClickable="false"/>
+
+    <Button
+        android:id="@+id/btnRemoveAvailabilityDates"
+        android:layout_width="0dp"
+        android:layout_height="40dp"
+        android:layout_weight="0.10"
+        android:drawableLeft="@android:drawable/ic_menu_close_clear_cancel"/>
+
+</LinearLayout>

@@ -90,7 +90,7 @@ public class RegisterActivity extends Activity {
 
     private void onSelectImageClick() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-            selectImage();
+            selectUserImage();
         }
         else {
             ActivityCompat.requestPermissions(
@@ -121,42 +121,42 @@ public class RegisterActivity extends Activity {
 
     private boolean validateInput(String username, String password1, String password2, String name, String surname, String email, String phone, UserRole userROle) {
         if (Utils.isNullOrEmpty(username)) {
-            Toast.makeText(RegisterActivity.this, R.string.REGISTER_EMPTY_USERNAME, Toast.LENGTH_SHORT).show();
+            Toast.makeText(RegisterActivity.this, R.string.register_empty_username, Toast.LENGTH_SHORT).show();
             return false;
         }
 
         if (Utils.isNullOrEmpty(password1) && Utils.isNullOrEmpty(password2)) {
-            Toast.makeText(RegisterActivity.this, R.string.REGISTER_EMPTY_PASSWORDS, Toast.LENGTH_SHORT).show();
+            Toast.makeText(RegisterActivity.this, R.string.register_empty_passwords, Toast.LENGTH_SHORT).show();
             return false;
         }
 
         if (!password1.equals(password2)) {
-            Toast.makeText(RegisterActivity.this, R.string.REGISTER_PASSWORDS_DONT_MATCH, Toast.LENGTH_SHORT).show();
+            Toast.makeText(RegisterActivity.this, R.string.register_passwords_dont_match, Toast.LENGTH_SHORT).show();
             return false;
         }
 
         if (Utils.isNullOrEmpty(name)) {
-            Toast.makeText(RegisterActivity.this, R.string.REGISTER_EMPTY_NAME, Toast.LENGTH_SHORT).show();
+            Toast.makeText(RegisterActivity.this, R.string.register_empty_name, Toast.LENGTH_SHORT).show();
             return false;
         }
 
         if (Utils.isNullOrEmpty(surname)) {
-            Toast.makeText(RegisterActivity.this, R.string.REGISTER_EMPTY_SURNAME, Toast.LENGTH_SHORT).show();
+            Toast.makeText(RegisterActivity.this, R.string.register_empty_surname, Toast.LENGTH_SHORT).show();
             return false;
         }
 
         if (Utils.isNullOrEmpty(email)) {
-            Toast.makeText(RegisterActivity.this, R.string.REGISTER_EMPTY_EMAIL, Toast.LENGTH_SHORT).show();
+            Toast.makeText(RegisterActivity.this, R.string.register_empty_email, Toast.LENGTH_SHORT).show();
             return false;
         }
 
         if (Utils.isNullOrEmpty(phone)) {
-            Toast.makeText(RegisterActivity.this, R.string.REGISTER_EMPTY_PHONE, Toast.LENGTH_SHORT).show();
+            Toast.makeText(RegisterActivity.this, R.string.register_empty_phone, Toast.LENGTH_SHORT).show();
             return false;
         }
 
         if (!selectedImage) {
-            Toast.makeText(RegisterActivity.this, R.string.REGISTER_EMPTY_IMAGE, Toast.LENGTH_SHORT).show();
+            Toast.makeText(RegisterActivity.this, R.string.register_empty_image, Toast.LENGTH_SHORT).show();
             return false;
         }
 
@@ -187,7 +187,7 @@ public class RegisterActivity extends Activity {
                     }
                 }
                 else {
-                    Utils.makeInternalErrorToast(LoginActivity.this);
+                    Utils.makeInternalErrorToast(RegisterActivity.this);
                 }
             }
 
@@ -198,14 +198,14 @@ public class RegisterActivity extends Activity {
         });
     }
 
-    private void selectImage() {
+    private void selectImage(String selectImageMessage) {
         Intent getIntent = new Intent(Intent.ACTION_GET_CONTENT);
         setPickImageIntentParameters(getIntent);
 
         Intent pickIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
         setPickImageIntentParameters(pickIntent);
 
-        Intent chooserIntent = Intent.createChooser(getIntent, getResources().getString(R.string.REGISTER_SELECT_PICTURE));
+        Intent chooserIntent = Intent.createChooser(getIntent, selectImageMessage);
         chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[] {pickIntent});
 
         startActivityForResult(chooserIntent, Constants.PICK_IMAGE_REQUEST_CODE);
@@ -230,9 +230,13 @@ public class RegisterActivity extends Activity {
                 setSelectedImage(data);
                 break;
             case Constants.READ_EXTERNAL_STORAGE_REQUEST_CODE:
-                selectImage();
+                selectUserImage();
                 break;
         }
+    }
+
+    private void selectUserImage() {
+        selectImage(getResources().getString(R.string.register_select_picture));
     }
 
     private void setSelectedImage(Intent data) {
