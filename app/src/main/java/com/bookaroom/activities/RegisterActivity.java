@@ -89,15 +89,15 @@ public class RegisterActivity extends Activity {
     }
 
     private void onSelectImageClick() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-            selectUserImage();
-        }
-        else {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(
                     this,
                     Constants.READ_STORAGE_PERMISSIONS_ARRAY,
                     Constants.READ_EXTERNAL_STORAGE_REQUEST_CODE);
+            return;
         }
+
+        selectUserImage();
     }
 
     private void onRegisterButtonClick() {

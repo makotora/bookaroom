@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">bookaroom</string>
-    <string name="login_failed">Wrong username or password</string>
+    <string name="google_maps_key">AIzaSyB7UusHNc04l8GsOvCd3-K3VXYZM4BEc90</string>
+    <string name="login_failed" translatable="false">Wrong username or password</string>
     <string name="login_success">Login successful!</string>
     <string name="login_invalid_input">Please enter your username and password</string>
     <string name="login_failed_failure">Wrong username or password! Request failure!</string>

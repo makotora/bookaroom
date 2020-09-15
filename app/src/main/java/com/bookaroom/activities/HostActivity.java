@@ -1,11 +1,16 @@
 package com.bookaroom.activities;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
@@ -20,19 +25,35 @@ import com.bookaroom.adapters.AvailabilityRangesAdapter;
 import com.bookaroom.adapters.SelectedImagesAdapter;
 import com.bookaroom.enums.ListingType;
 import com.bookaroom.adapters.data.AvailabilityRange;
+import com.bookaroom.utils.Constants;
 import com.bookaroom.utils.NavigationUtils;
 import com.bookaroom.utils.dto.SelectedImageInfo;
 import com.bookaroom.utils.listeners.ImageSelectionHelper;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class HostActivity extends AppCompatActivity {
+public class HostActivity extends FragmentActivity implements OnMapReadyCallback {
     private static final int REQUEST_MAIN_IMAGE_PERMISSIONS_CODE = 1;
     private static final int REQUEST_MAIN_IMAGE_PICK_CODE = 2;
     private static final int REQUEST_ADDITIONAL_IMAGE_PERMISSIONS_CODE = 3;
     private static final int REQUEST_ADDITIONAL_IMAGE_PICK_CODE = 4;
+    private static final int REQUEST_LOCATION_PERMISSIONS_CODE = 5;
+    private static final int REQUEST_CURRENT_LOCATION_CODE = 6;
+
+    private FusedLocationProviderClient fusedLocationProviderClient;
+    private Location currentLocation;
 
     private ListView availabilityRangesListView;
     private AvailabilityRangesAdapter availabilityRangesAdapter;
@@ -53,13 +74,47 @@ public class HostActivity extends AppCompatActivity {
 
         NavigationUtils.initializeBottomNavigationBar(this);
 
+        initializeListingMap();
         initializeAvailabilityRangesView();
         initializeListingTypeSpinner();
 
         initializeMainImageView();
         initializeAdditionalImagesView();
 
-        overrideScrollOnAvailabilityRanges();
+        overrideScrollOperations();
+    }
+
+    private void initializeListingMap() {
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+        getPermissionsOrCurrentLocation();
+    }
+
+    private void getPermissionsOrCurrentLocation() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, Constants.READ_LOCATION_PERMISSIONS_ARRAY, REQUEST_LOCATION_PERMISSIONS_CODE);
+            return;
+        }
+
+        getCurrentLocation();
+    }
+
+    @SuppressLint("MissingPermission")
+    private void getCurrentLocation() {
+        Task<Location> lastLocationTask = fusedLocationProviderClient.getLastLocation();
+        lastLocationTask.addOnSuccessListener(new OnSuccessListener<Location>() {
+            @Override
+            public void onSuccess(Location location) {
+                if (location != null) {
+                    currentLocation = location;
+                    initializeListMapFragment();
+                }
+            }
+        });
+    }
+
+    private void initializeListMapFragment() {
+        SupportMapFragment listingMapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.host_listing_map);
+        listingMapFragment.getMapAsync(this);
     }
 
     private void initializeAvailabilityRangesView() {
@@ -127,6 +182,10 @@ public class HostActivity extends AppCompatActivity {
             case REQUEST_ADDITIONAL_IMAGE_PICK_CODE:
                 addAdditionalPicture(data);
                 break;
+            case REQUEST_LOCATION_PERMISSIONS_CODE:
+                getCurrentLocation();
+                break;
+
         }
     }
 
@@ -156,19 +215,19 @@ public class HostActivity extends AppCompatActivity {
     }
 
 
-    private void overrideScrollOnAvailabilityRanges() {
+    private void overrideScrollOperations() {
         ScrollView parentScroll = (ScrollView) findViewById(R.id.host_scrollView);
-        ListView childScroll = availabilityRangesListView;
+        ListView availabilityRangesScroll = availabilityRangesListView;
 
         parentScroll.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                childScroll.getParent().requestDisallowInterceptTouchEvent(false);
+                availabilityRangesScroll.getParent().requestDisallowInterceptTouchEvent(false);
                 return false;
             }
         });
 
-        childScroll.setOnTouchListener(new View.OnTouchListener() {
+        availabilityRangesScroll.setOnTouchListener(new View.OnTouchListener() {
 
             public boolean onTouch(View v, MotionEvent event)
             {
@@ -176,5 +235,37 @@ public class HostActivity extends AppCompatActivity {
                 return false;
             }
         });
+
+        ImageView transparentImageView = (ImageView) findViewById(R.id.transparent_image);
+        transparentImageView.setOnTouchListener(new View.OnTouchListener() {
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                int action = event.getAction();
+                switch (action) {
+                    case MotionEvent.ACTION_DOWN:
+                    case MotionEvent.ACTION_MOVE:
+                        parentScroll.requestDisallowInterceptTouchEvent(true);
+                        return false;
+
+                    case MotionEvent.ACTION_UP:
+                        parentScroll.requestDisallowInterceptTouchEvent(false);
+                        return true;
+
+                    default:
+                        return true;
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        LatLng currentLocationLatLng = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
+        MarkerOptions currentLocationMO = new MarkerOptions().position(currentLocationLatLng).title("Your location");
+
+        googleMap.animateCamera(CameraUpdateFactory.newLatLng(currentLocationLatLng));
+        googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocationLatLng, Constants.DEFAULT_MAP_ZOOM));
+        googleMap.addMarker(currentLocationMO);
     }
 }
