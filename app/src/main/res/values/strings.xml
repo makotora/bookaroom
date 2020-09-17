@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">bookaroom</string>
-    <string name="google_maps_key">AIzaSyB7UusHNc04l8GsOvCd3-K3VXYZM4BEc90</string>
+    <string name="google_api_key">AIzaSyB7UusHNc04l8GsOvCd3-K3VXYZM4BEc90</string>
     <string name="login_failed" translatable="false">Wrong username or password</string>
     <string name="login_success">Login successful!</string>
     <string name="login_invalid_input">Please enter your username and password</string>
@@ -43,4 +43,27 @@
     <string name="host_select_main_image">Select a main picture for your listing</string>
     <string name="host_select_additional_image">Add an additional image for your listing</string>
     <string name="host_additional_pictures">Additional Pictures:</string>
+    <string name="host_search_address_text">Search</string>
+    <string name="host_listing_rules">Rules:</string>
+    <string name="host_listing_description">Description:</string>
+    <string name="host_num_beds">Beds:</string>
+    <string name="host_num_bathrooms">Bathrooms:</string>
+    <string name="host_num_bedrooms">Bedrooms</string>
+    <string name="host_has_living_room">Living room:</string>
+    <string name="host_listing_area">Listing Area:</string>
+    <string name="host_create_listing">Create</string>
+    <string name="host_update_listing">Update</string>
+    <string name="host_delete_listing">Delete</string>
+    <string name="host_empty_address">Please enter a valid address</string>
+    <string name="host_invalid_max_guests">Please enter a valid number of maximum guests</string>
+    <string name="host_invalid_min_price">Please enter a valid minimum price</string>
+    <string name="host_invalid_extra_cost">Please enter a valid price per extra guest</string>
+    <string name="host_invalid_listing_type">Please enter a valid listing type</string>
+    <string name="host_empty_description">Please enter a description for your listing</string>
+    <string name="host_invalid_number_of_beds">Please enter a valid number of beds</string>
+    <string name="host_invalid_number_of_bathrooms">Please enter a valid number of bathrooms</string>
+    <string name="host_invalid_number_of_bedrooms">Please enter a valid number of bedrooms</string>
+    <string name="host_invalid_listing_area">Please enter a valid area for your listing</string>
+    <string name="host_missing_availability_dates">Please enter availability dates for your listing</string>
+    <string name="host_missing_main_picture">Please pick a main picture for your listing</string>
 </resources>

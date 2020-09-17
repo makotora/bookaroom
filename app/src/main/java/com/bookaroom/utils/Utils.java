@@ -5,6 +5,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.bookaroom.R;
+import com.bookaroom.activities.HostActivity;
 
 public class Utils {
 
@@ -28,5 +29,41 @@ public class Utils {
         sb.append(str);
 
         return sb.toString();
+    }
+
+    public static Integer parseInteger(EditText editText) {
+        return parseInteger(editText.getText().toString());
+    }
+
+    public static Integer parseInteger(String str) {
+        Integer value;
+        try {
+            value = Integer.parseInt(str);
+        }
+        catch (Exception e) {
+            value = null;
+        }
+
+        return value;
+    }
+
+    public static Double parseDouble(EditText editText) {
+        return parseDouble(editText.getText().toString());
+    }
+
+    public static Double parseDouble(String str) {
+        Double value;
+        try {
+            value = Double.parseDouble(str);
+        }
+        catch (Exception e) {
+            value = null;
+        }
+
+        return value;
+    }
+
+    public static void displayInvalidInputMessage(Activity currentActivity, int strResource) {
+        Toast.makeText(currentActivity, strResource, Toast.LENGTH_SHORT).show();
     }
 }

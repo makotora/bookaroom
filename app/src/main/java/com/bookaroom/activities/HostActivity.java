@@ -8,14 +8,21 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.Spinner;
@@ -25,8 +32,11 @@ import com.bookaroom.adapters.AvailabilityRangesAdapter;
 import com.bookaroom.adapters.SelectedImagesAdapter;
 import com.bookaroom.enums.ListingType;
 import com.bookaroom.adapters.data.AvailabilityRange;
+import com.bookaroom.exceptions.InvalidInputException;
+import com.bookaroom.models.ListingDetails;
 import com.bookaroom.utils.Constants;
 import com.bookaroom.utils.NavigationUtils;
+import com.bookaroom.utils.Utils;
 import com.bookaroom.utils.dto.SelectedImageInfo;
 import com.bookaroom.utils.listeners.ImageSelectionHelper;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -39,10 +49,15 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.libraries.places.api.Places;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+
+import okhttp3.internal.Util;
 
 public class HostActivity extends FragmentActivity implements OnMapReadyCallback {
     private static final int REQUEST_MAIN_IMAGE_PERMISSIONS_CODE = 1;
@@ -50,22 +65,45 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     private static final int REQUEST_ADDITIONAL_IMAGE_PERMISSIONS_CODE = 3;
     private static final int REQUEST_ADDITIONAL_IMAGE_PICK_CODE = 4;
     private static final int REQUEST_LOCATION_PERMISSIONS_CODE = 5;
-    private static final int REQUEST_CURRENT_LOCATION_CODE = 6;
+
+    // Request Data
+    private EditText addressEdtText;
+    private LatLng addressLatLng;
+    private List<AvailabilityRange> availabilityRanges;
+    private EditText maxGuestsEdtText;
+    private EditText minPriceEdtText;
+    private EditText extraCostEdtText;
+    private Spinner listingTypeSpinner;
+
+    private SelectedImageInfo mainPictureInfo;
+    private boolean mainPictureSelected;
+
+    private List<SelectedImageInfo> additionalImages;
+    private EditText rulesEdtText;
+    private EditText descriptionEdtText;
+    private EditText bedsEdtText;
+    private EditText bathroomsEdtText;
+    private EditText bedroomsEdtText;
+    private CheckBox hasLivingRoomCheckBox;
+    private EditText areaEdtText;
+    //-------------
+
+    private Button addressSearchBtn;
 
     private FusedLocationProviderClient fusedLocationProviderClient;
     private Location currentLocation;
+    private GoogleMap listingLocationMap;
 
     private ListView availabilityRangesListView;
     private AvailabilityRangesAdapter availabilityRangesAdapter;
-    private Spinner listingTypeSpinner;
 
     private ImageView mainPictureView;
-    private String mainPicturePath;
-    private boolean mainPictureSelected;
 
     private RecyclerView additionalImagesView;
-    private List<SelectedImageInfo> additionalImages;
     private SelectedImagesAdapter additionalImagesAdapter;
+
+    private Button submitButton;
+    private Button deleteButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,6 +112,9 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
 
         NavigationUtils.initializeBottomNavigationBar(this);
 
+        initializeSimpleFields();
+        initializeGooglePlaces();
+        initializeAddressSearch();
         initializeListingMap();
         initializeAvailabilityRangesView();
         initializeListingTypeSpinner();
@@ -82,6 +123,82 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
         initializeAdditionalImagesView();
 
         overrideScrollOperations();
+
+        boolean hostHasListing = false;
+        if (hostHasListing) {
+            setExistingData();
+            initializeDeleteButton();
+        }
+
+        initializeSubmitButton(hostHasListing);
+
+        if (Constants.INITIALIZE_FORMS_WITH_TEST_DATA) {
+            setDummyData();
+        }
+    }
+
+    private void initializeSimpleFields() {
+        maxGuestsEdtText = (EditText) findViewById(R.id.host_edt_max_guests);
+        minPriceEdtText = (EditText) findViewById(R.id.host_edt_min_price);
+        extraCostEdtText = (EditText) findViewById(R.id.host_edt_extra_cost);
+        rulesEdtText = (EditText) findViewById(R.id.host_edt_rules);
+        descriptionEdtText = (EditText) findViewById(R.id.host_edt_description);
+        bedsEdtText = (EditText) findViewById(R.id.host_edt_num_beds);
+        bathroomsEdtText = (EditText) findViewById(R.id.host_edt_num_bathrooms);
+        bedroomsEdtText = (EditText) findViewById(R.id.host_edt_num_bedrooms);
+        hasLivingRoomCheckBox = (CheckBox) findViewById(R.id.host_has_living_room);
+        areaEdtText = (EditText) findViewById(R.id.host_edt_listing_area);
+    }
+
+    private void initializeGooglePlaces() {
+        if (!Places.isInitialized()) {
+            Places.initialize(getApplicationContext(), getResources().getString(R.string.google_api_key));
+        }
+    }
+
+    private void initializeAddressSearch() {
+        addressEdtText = findViewById(R.id.host_edtAddress);
+
+        addressSearchBtn = findViewById(R.id.host_btn_search_address);
+
+        addressSearchBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                LatLng location = getAddressTextLocation();
+                if (location != null) {
+                    setMapLocation(listingLocationMap, "", location);
+                }
+            }
+        });
+    }
+
+    public LatLng getAddressTextLocation() {
+        addressLatLng = getLocationFromAddress(HostActivity.this, addressEdtText.getText().toString());
+        return addressLatLng;
+    }
+
+
+    public LatLng getLocationFromAddress(Context context, String strAddress) {
+
+        Geocoder coder = new Geocoder(context, Locale.getDefault());
+        List<Address> possibleAddresses;
+        LatLng latLng = null;
+
+        try {
+            possibleAddresses = coder.getFromLocationName(strAddress, 1);
+            if (possibleAddresses == null) {
+                return null;
+            }
+            Address location = possibleAddresses.get(0);
+
+            latLng = new LatLng(location.getLatitude(), location.getLongitude() );
+
+        } catch (Exception ex) {
+
+            ex.printStackTrace();
+        }
+
+        return latLng;
     }
 
     private void initializeListingMap() {
@@ -118,8 +235,10 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void initializeAvailabilityRangesView() {
+        availabilityRanges = getInitialAvailabilityRanges();
+
         availabilityRangesListView = (ListView) findViewById(R.id.listViewAvailabiliyRanges);
-        availabilityRangesAdapter = new AvailabilityRangesAdapter(this, R.layout.host_availability_dates, getInitialAvailabilityRanges());
+        availabilityRangesAdapter = new AvailabilityRangesAdapter(this, R.layout.host_availability_dates, availabilityRanges);
         availabilityRangesListView.setAdapter(availabilityRangesAdapter);
 
         findViewById(R.id.host_btnAddDates).setOnClickListener((view) -> addAvailabilityDatesRow());
@@ -185,14 +304,13 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
             case REQUEST_LOCATION_PERMISSIONS_CODE:
                 getCurrentLocation();
                 break;
-
         }
     }
 
     private void setMainPicture(Intent data) {
         SelectedImageInfo selectedImageInfo = ImageSelectionHelper.getSelectedImageInfo(this, data);
         mainPictureView.setImageBitmap(selectedImageInfo.getBitmap());
-        mainPicturePath = selectedImageInfo.getPath();
+        mainPictureInfo = selectedImageInfo;
         mainPictureSelected = true;
     }
 
@@ -213,7 +331,6 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
         additionalImages.add(selectedImageInfo);
         additionalImagesAdapter.notifyDataSetChanged();
     }
-
 
     private void overrideScrollOperations() {
         ScrollView parentScroll = (ScrollView) findViewById(R.id.host_scrollView);
@@ -261,11 +378,193 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        listingLocationMap = googleMap;
+
         LatLng currentLocationLatLng = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
-        MarkerOptions currentLocationMO = new MarkerOptions().position(currentLocationLatLng).title("Your location");
+        setMapLocation(googleMap, "Your location", currentLocationLatLng);
+    }
+
+    private void setMapLocation(GoogleMap googleMap, String markerTitle, LatLng currentLocationLatLng) {
+        googleMap.clear();
+        MarkerOptions currentLocationMO = new MarkerOptions().position(currentLocationLatLng).title(markerTitle);
 
         googleMap.animateCamera(CameraUpdateFactory.newLatLng(currentLocationLatLng));
         googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocationLatLng, Constants.DEFAULT_MAP_ZOOM));
         googleMap.addMarker(currentLocationMO);
     }
+
+    // TODO
+    private void setExistingData() {}
+
+    private void initializeDeleteButton() {
+        LinearLayout deleteButtonLayout = findViewById(R.id.host_delete_button_layout);
+        deleteButton = new Button(this);
+
+    }
+
+    private void initializeSubmitButton(boolean hasListing) {
+        int buttonTextResource;
+        View.OnClickListener submitFormOnClickListener;
+
+        if (!hasListing) {
+            buttonTextResource = R.string.host_create_listing;
+            submitFormOnClickListener = new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    onCreateClick();
+                }
+            };
+        }
+        else {
+            buttonTextResource = R.string.host_update_listing;
+            submitFormOnClickListener = new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    onUpdateClick();
+                }
+            };
+        }
+
+        submitButton = (Button) findViewById(R.id.host_submit_button);
+        submitButton.setText(buttonTextResource);
+        submitButton.setOnClickListener(submitFormOnClickListener);
+    }
+
+    private void onCreateClick() {
+        ListingDetails listingDetails;
+
+        try {
+            listingDetails = getListingDetailsIfValid();
+        } catch (InvalidInputException e) {
+            displayInvalidInputMessage(e.getErrorStringResource());
+            return;
+        }
+    }
+
+    // TODO
+    private void onUpdateClick() {
+    }
+
+    private ListingDetails getListingDetailsIfValid() throws InvalidInputException {
+        String address = Utils.getEditTextString(addressEdtText);
+        if (Utils.isNullOrEmpty(address)) {
+            throw new InvalidInputException(R.string.host_empty_address);
+        }
+
+        Integer maxGuests = Utils.parseInteger(maxGuestsEdtText);
+        if (maxGuests == null) {
+            throw new InvalidInputException(R.string.host_invalid_max_guests);
+        }
+
+        Double minPrice = Utils.parseDouble(minPriceEdtText);
+        if (minPrice == null) {
+            throw new InvalidInputException(R.string.host_invalid_min_price);
+        }
+
+        Double extraCost = Utils.parseDouble(extraCostEdtText);
+        if (extraCost == null) {
+            throw new InvalidInputException(R.string.host_invalid_extra_cost);
+        }
+
+        ListingType listingType;
+        try {
+            listingType = ListingType.valueOf(listingTypeSpinner.getSelectedItem().toString());
+        }
+        catch (Exception e) {
+            throw new InvalidInputException(R.string.host_invalid_listing_type);
+        }
+
+        // Rules not checked on purpose. Maybe there are no rules :)
+        String rules = Utils.getEditTextString(rulesEdtText);
+
+        String description = Utils.getEditTextString(descriptionEdtText);
+        if (Utils.isNullOrEmpty(description)) {
+            throw new InvalidInputException(R.string.host_empty_description);
+        }
+
+        Integer numberOfBeds = Utils.parseInteger(bedsEdtText);
+        if (numberOfBeds == null) {
+            throw new InvalidInputException(R.string.host_invalid_number_of_beds);
+        }
+
+        Integer numberOfBathrooms = Utils.parseInteger(bathroomsEdtText);
+        if (numberOfBathrooms == null) {
+            throw new InvalidInputException(R.string.host_invalid_number_of_bathrooms);
+        }
+
+        Integer numberOfBedrooms = Utils.parseInteger(bedroomsEdtText);
+        if (numberOfBedrooms == null) {
+            throw new InvalidInputException(R.string.host_invalid_number_of_bedrooms);
+        }
+
+        Integer listingArea = Utils.parseInteger(areaEdtText);
+        if (listingArea == null) {
+            throw new InvalidInputException(R.string.host_invalid_listing_area);
+        }
+
+        boolean hasLivingRoom = hasLivingRoomCheckBox.isChecked();
+
+        if (availabilityRanges.isEmpty()) {
+            throw new InvalidInputException(R.string.host_missing_availability_dates);
+        }
+
+        AvailabilityRange[] availabilityRangesArray = new AvailabilityRange[availabilityRanges.size()];
+        for (AvailabilityRange availabilityRange : availabilityRanges) {
+            if (availabilityRange.getFrom() == null || availabilityRange.getTo() == null) {
+                throw new InvalidInputException(R.string.host_missing_availability_dates);
+            }
+        }
+        availabilityRangesArray = availabilityRanges.toArray(availabilityRangesArray);
+
+        if (!mainPictureSelected) {
+            throw new InvalidInputException(R.string.host_missing_main_picture);
+        }
+        File mainImageFile = new File(mainPictureInfo.getPath());
+
+        File[] additionalImageFiles = new File[additionalImages.size()];
+        for (int i = 0; i < additionalImages.size(); i++) {
+            SelectedImageInfo selectedImageInfo = additionalImages.get(i);
+            additionalImageFiles[i] = new File(selectedImageInfo.getPath());
+        }
+
+        LatLng addressLatLng = getAddressTextLocation();
+
+        return new ListingDetails(
+                address,
+                addressLatLng == null ? null : addressLatLng.longitude,
+                addressLatLng == null ? null : addressLatLng.latitude,
+                maxGuests,
+                minPrice,
+                extraCost,
+                listingType,
+                rules,
+                description,
+                numberOfBeds,
+                numberOfBathrooms,
+                numberOfBathrooms,
+                listingArea,
+                hasLivingRoom,
+                availabilityRangesArray,
+                mainImageFile,
+                additionalImageFiles
+                );
+    }
+
+    private void displayInvalidInputMessage(int strResource) {
+        Utils.displayInvalidInputMessage(this, strResource);
+    }
+
+    private void setDummyData() {
+        addressEdtText.setText("Dummy Address");
+        maxGuestsEdtText.setText("5");
+        minPriceEdtText.setText("100");
+        extraCostEdtText.setText("10");
+        descriptionEdtText.setText("Dummy Description");
+        bedsEdtText.setText("3");
+        bathroomsEdtText.setText("2");
+        bedroomsEdtText.setText("2");
+        areaEdtText.setText("75");
+    }
+
+
 }

@@ -15,5 +15,8 @@ public class Constants {
     public static final String[] READ_LOCATION_PERMISSIONS_ARRAY = {Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION};
 
     public static final int PROFILE_PICTURE_QUALITY = 90;
-    public static final float DEFAULT_MAP_ZOOM = 5;
+    public static final float DEFAULT_MAP_ZOOM = 20;
+    public static final String DEFAULT_COUNTRY = "GR";
+
+    public static boolean INITIALIZE_FORMS_WITH_TEST_DATA = true;
 }
