@@ -5,6 +5,7 @@ import com.bookaroom.enums.ListingType;
 
 import java.io.File;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ListingDetails {
@@ -36,13 +37,14 @@ public class ListingDetails {
 
     private boolean hasLivingRoom;
 
-    private AvailabilityRange[] availabilityRanges;
+    private ArrayList<AvailabilityRange> availabilityRanges;
 
     private File mainPicture;
 
-    private File[] additionalPictures;
+    private ArrayList<File> additionalPictures;
 
-    public ListingDetails(String address, Double longitude, Double latitude, Integer maxGuests, Double minPrice, Double costPerExtraGuest, ListingType type, String rules, String description, Integer numberOfBeds, Integer numberOfBathrooms, Integer numberOfBedrooms, Integer area, boolean hasLivingRoom, AvailabilityRange[] availabilityRanges, File mainPicture, File[] additionalPictures) {
+    public ListingDetails(String address, Double longitude, Double latitude, Integer maxGuests, Double minPrice, Double costPerExtraGuest, ListingType type, String rules, String description, Integer numberOfBeds, Integer numberOfBathrooms, Integer numberOfBedrooms,
+                          Integer area, boolean hasLivingRoom, ArrayList<AvailabilityRange> availabilityRanges, File mainPicture, ArrayList<File> additionalPictures) {
         this.address = address;
         this.longitude = longitude;
         this.latitude = latitude;
@@ -174,11 +176,11 @@ public class ListingDetails {
         this.hasLivingRoom = hasLivingRoom;
     }
 
-    public AvailabilityRange[] getAvailabilityRanges() {
+    public ArrayList<AvailabilityRange> getAvailabilityRanges() {
         return availabilityRanges;
     }
 
-    public void setAvailabilityRanges(AvailabilityRange[] availabilityRanges) {
+    public void setAvailabilityRanges(ArrayList<AvailabilityRange> availabilityRanges) {
         this.availabilityRanges = availabilityRanges;
     }
 
@@ -190,11 +192,11 @@ public class ListingDetails {
         this.mainPicture = mainPicture;
     }
 
-    public File[] getAdditionalPictures() {
+    public ArrayList<File> getAdditionalPictures() {
         return additionalPictures;
     }
 
-    public void setAdditionalPictures(File[] additionalPictures) {
+    public void setAdditionalPictures(ArrayList<File> additionalPictures) {
         this.additionalPictures = additionalPictures;
     }
 }

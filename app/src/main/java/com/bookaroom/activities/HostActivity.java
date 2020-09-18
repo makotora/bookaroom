@@ -15,6 +15,7 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -26,6 +27,7 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import com.bookaroom.R;
 import com.bookaroom.adapters.AvailabilityRangesAdapter;
@@ -33,9 +35,13 @@ import com.bookaroom.adapters.SelectedImagesAdapter;
 import com.bookaroom.enums.ListingType;
 import com.bookaroom.adapters.data.AvailabilityRange;
 import com.bookaroom.exceptions.InvalidInputException;
+import com.bookaroom.models.ActionResponse;
 import com.bookaroom.models.ListingDetails;
+import com.bookaroom.remote.ApiUtils;
+import com.bookaroom.remote.services.ListingService;
 import com.bookaroom.utils.Constants;
 import com.bookaroom.utils.NavigationUtils;
+import com.bookaroom.utils.RequestUtils;
 import com.bookaroom.utils.Utils;
 import com.bookaroom.utils.dto.SelectedImageInfo;
 import com.bookaroom.utils.listeners.ImageSelectionHelper;
@@ -56,10 +62,15 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
-import okhttp3.internal.Util;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class HostActivity extends FragmentActivity implements OnMapReadyCallback {
+    private static final String LOG_TAG = "HostActivity";
+
     private static final int REQUEST_MAIN_IMAGE_PERMISSIONS_CODE = 1;
     private static final int REQUEST_MAIN_IMAGE_PICK_CODE = 2;
     private static final int REQUEST_ADDITIONAL_IMAGE_PERMISSIONS_CODE = 3;
@@ -69,7 +80,7 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     // Request Data
     private EditText addressEdtText;
     private LatLng addressLatLng;
-    private List<AvailabilityRange> availabilityRanges;
+    private ArrayList<AvailabilityRange> availabilityRanges;
     private EditText maxGuestsEdtText;
     private EditText minPriceEdtText;
     private EditText extraCostEdtText;
@@ -87,6 +98,8 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     private CheckBox hasLivingRoomCheckBox;
     private EditText areaEdtText;
     //-------------
+
+    ListingService listingService;
 
     private Button addressSearchBtn;
 
@@ -112,6 +125,8 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
 
         NavigationUtils.initializeBottomNavigationBar(this);
 
+        initializeServices();
+
         initializeSimpleFields();
         initializeGooglePlaces();
         initializeAddressSearch();
@@ -135,6 +150,10 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
         if (Constants.INITIALIZE_FORMS_WITH_TEST_DATA) {
             setDummyData();
         }
+    }
+
+    private void initializeServices() {
+        listingService = ApiUtils.getListingService();
     }
 
     private void initializeSimpleFields() {
@@ -244,9 +263,9 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
         findViewById(R.id.host_btnAddDates).setOnClickListener((view) -> addAvailabilityDatesRow());
     }
 
-    private List<AvailabilityRange> getInitialAvailabilityRanges() {
+    private ArrayList<AvailabilityRange> getInitialAvailabilityRanges() {
         AvailabilityRange initialAvailabilityRange = new AvailabilityRange(new Date(), new Date());
-        List<AvailabilityRange> availabilityRanges = new ArrayList<AvailabilityRange>(1);
+        ArrayList<AvailabilityRange> availabilityRanges = new ArrayList<AvailabilityRange>(1);
         availabilityRanges.add(initialAvailabilityRange);
 
         return availabilityRanges;
@@ -439,6 +458,58 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
             displayInvalidInputMessage(e.getErrorStringResource());
             return;
         }
+
+        createListing(listingDetails);
+    }
+
+    private void createListing(ListingDetails listingDetails) {
+        Call call =
+                listingService.create(RequestUtils.getRequestBodyForString(listingDetails.getAddress()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.getLongitude()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.getLatitude()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.getMaxGuests()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.getMinPrice()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.getCostPerExtraGuest()),
+                                      RequestUtils.getRequestBodyForString(listingDetails.getType().name()),
+                                      RequestUtils.getRequestBodyForString(listingDetails.getRules()),
+                                      RequestUtils.getRequestBodyForString(listingDetails.getDescription()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.getNumberOfBeds()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.getNumberOfBathrooms()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.getNumberOfBedrooms()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.getArea()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.isHasLivingRoom()),
+                                      RequestUtils.getRequestBodyForString(RequestUtils.toRequestString(listingDetails.getAvailabilityRanges())),
+                                      RequestUtils.getMultipartBodyPartForFile
+                                              (listingDetails.getMainPicture(),
+                                               ListingService.LISTING_MAIN_PICTURE_PARAM_NAME
+                                               ),
+                                      RequestUtils.getMultipartsForFiles(listingDetails.getAdditionalPictures(), ListingService.LISTING_ADDITIONAL_PICTURES_PARAM_NAME)
+                                      );
+
+        call.enqueue(new Callback<ActionResponse>() {
+            @Override
+            public void onResponse(Call<ActionResponse> call, Response<ActionResponse> response) {
+                if (response.isSuccessful()) {
+                    ActionResponse actionResponse = response.body();
+
+                    if (actionResponse != null) {
+                        Toast.makeText(HostActivity.this, actionResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+
+                    if (!actionResponse.isSuccess()) {
+                        return;
+                    }
+                }
+                else {
+                    Utils.makeInternalErrorToast(HostActivity.this);
+                }
+            }
+
+            @Override
+            public void onFailure(Call call, Throwable t) {
+                Toast.makeText(HostActivity.this, t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     // TODO
@@ -508,23 +579,21 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
             throw new InvalidInputException(R.string.host_missing_availability_dates);
         }
 
-        AvailabilityRange[] availabilityRangesArray = new AvailabilityRange[availabilityRanges.size()];
         for (AvailabilityRange availabilityRange : availabilityRanges) {
             if (availabilityRange.getFrom() == null || availabilityRange.getTo() == null) {
                 throw new InvalidInputException(R.string.host_missing_availability_dates);
             }
         }
-        availabilityRangesArray = availabilityRanges.toArray(availabilityRangesArray);
 
         if (!mainPictureSelected) {
             throw new InvalidInputException(R.string.host_missing_main_picture);
         }
         File mainImageFile = new File(mainPictureInfo.getPath());
 
-        File[] additionalImageFiles = new File[additionalImages.size()];
+        ArrayList<File> additionalImageFiles = new ArrayList<>(additionalImages.size());
         for (int i = 0; i < additionalImages.size(); i++) {
             SelectedImageInfo selectedImageInfo = additionalImages.get(i);
-            additionalImageFiles[i] = new File(selectedImageInfo.getPath());
+            additionalImageFiles.add(new File(selectedImageInfo.getPath()));
         }
 
         LatLng addressLatLng = getAddressTextLocation();
@@ -544,7 +613,7 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
                 numberOfBathrooms,
                 listingArea,
                 hasLivingRoom,
-                availabilityRangesArray,
+                availabilityRanges,
                 mainImageFile,
                 additionalImageFiles
                 );
@@ -555,7 +624,7 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void setDummyData() {
-        addressEdtText.setText("Dummy Address");
+        addressEdtText.setText("Greece");
         maxGuestsEdtText.setText("5");
         minPriceEdtText.setText("100");
         extraCostEdtText.setText("10");

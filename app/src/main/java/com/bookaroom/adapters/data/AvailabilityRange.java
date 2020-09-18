@@ -1,8 +1,12 @@
 package com.bookaroom.adapters.data;
 
+import com.bookaroom.interfaces.RequestStringConvertible;
+
+import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.Date;
 
-public class AvailabilityRange {
+public class AvailabilityRange implements RequestStringConvertible {
     private Date from;
     private Date to;
 
@@ -27,5 +31,11 @@ public class AvailabilityRange {
 
     public void setTo(Date to) {
         this.to = to;
+    }
+
+    @Override
+    public String toRequestString() {
+        return new SimpleDateFormat("dd/MM/yyyy").format(from) + "," + new SimpleDateFormat("dd" +
+                                                                                                    "/MM/yyyy").format(to);
     }
 }

@@ -10,7 +10,9 @@ import com.bookaroom.R;
 import com.bookaroom.models.LoginRequest;
 import com.bookaroom.remote.ApiUtils;
 import com.bookaroom.remote.services.UserService;
+import com.bookaroom.utils.Constants;
 import com.bookaroom.utils.NavigationUtils;
+import com.bookaroom.utils.SessionManager;
 import com.bookaroom.utils.Utils;
 
 import retrofit2.Call;
@@ -64,12 +66,15 @@ public class LoginActivity extends AppCompatActivity {
             public void onResponse(Call call, Response response) {
                 if (response.isSuccessful()) {
                     Toast.makeText(LoginActivity.this, R.string.login_success, Toast.LENGTH_SHORT).show();
+                    String authenticationToken =
+                            response.headers().get(Constants.AUTHORIZATION_HEADER);
+                    SessionManager.setAuthenticationToken(authenticationToken);
+
                     NavigationUtils.startHomeActivity(LoginActivity.this);
                 }
                 else {
                     Toast.makeText(LoginActivity.this, R.string.login_failed, Toast.LENGTH_SHORT).show();
                 }
-                //Toast.makeText(LoginActivity.this, response.headers().get(AUTHORIZATION_HEADER), Toast.LENGTH_SHORT).show();
             }
 
             @Override
