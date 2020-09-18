@@ -1,6 +1,7 @@
 package com.bookaroom.remote.client;
 
 import java.security.cert.CertificateException;
+import java.util.List;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
@@ -9,10 +10,11 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 
 public class SelfSignCertHttpClient {
-    public static OkHttpClient getSelfSignOkHttpClient() {
+    public static OkHttpClient getSelfSignOkHttpClient(List<Interceptor> interceptors) {
         try {
             final TrustManager[] trustAllCerts = new TrustManager[] {
                     new X509TrustManager() {
@@ -44,6 +46,10 @@ public class SelfSignCertHttpClient {
                     return true;
                 }
             });
+
+            for (Interceptor interceptor : interceptors) {
+                builder.addInterceptor(interceptor);
+            }
 
             OkHttpClient okHttpClient = builder.build();
             return okHttpClient;
