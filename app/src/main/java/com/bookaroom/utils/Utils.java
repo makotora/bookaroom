@@ -1,6 +1,8 @@
 package com.bookaroom.utils;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.os.Environment;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -9,6 +11,11 @@ import androidx.core.util.Consumer;
 import com.bookaroom.R;
 import com.bookaroom.activities.HostActivity;
 import com.bookaroom.models.ActionResponse;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.nio.file.Paths;
 
 import retrofit2.Response;
 
@@ -24,6 +31,10 @@ public class Utils {
 
     public static void makeInternalErrorToast(Activity activity) {
         Toast.makeText(activity, R.string.internal_error, Toast.LENGTH_SHORT).show();
+    }
+
+    public static void makeLoadErrorToast(Activity activity) {
+        Toast.makeText(activity, R.string.loading_error, Toast.LENGTH_SHORT).show();
     }
 
     public static String padStringLeft(String str, char padCharacter, int desiredLength) {

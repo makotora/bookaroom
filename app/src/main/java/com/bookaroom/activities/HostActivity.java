@@ -1,10 +1,5 @@
 package com.bookaroom.activities;
 
-import androidx.core.app.ActivityCompat;
-import androidx.fragment.app.FragmentActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -12,6 +7,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.PictureDrawable;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -29,11 +27,16 @@ import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import androidx.core.app.ActivityCompat;
+import androidx.fragment.app.FragmentActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.bookaroom.R;
 import com.bookaroom.adapters.AvailabilityRangesAdapter;
 import com.bookaroom.adapters.SelectedImagesAdapter;
-import com.bookaroom.enums.ListingType;
 import com.bookaroom.adapters.data.AvailabilityRange;
+import com.bookaroom.enums.ListingType;
 import com.bookaroom.exceptions.InvalidInputException;
 import com.bookaroom.models.ActionResponse;
 import com.bookaroom.models.ListingDetails;
@@ -42,12 +45,13 @@ import com.bookaroom.remote.ApiUtils;
 import com.bookaroom.remote.PicassoTrustAll;
 import com.bookaroom.remote.services.ListingService;
 import com.bookaroom.utils.Constants;
-import com.bookaroom.utils.navigation.NavigationUtils;
+import com.bookaroom.utils.FileUtils;
+import com.bookaroom.utils.ImageSelectionUtils;
+import com.bookaroom.utils.ImageUtils;
 import com.bookaroom.utils.RequestUtils;
 import com.bookaroom.utils.ResponseUtils;
 import com.bookaroom.utils.Utils;
-import com.bookaroom.utils.dto.SelectedImageInfo;
-import com.bookaroom.utils.ImageSelectionUtils;
+import com.bookaroom.utils.navigation.NavigationUtils;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -61,6 +65,8 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.libraries.places.api.Places;
 import com.squareup.picasso.MemoryPolicy;
 import com.squareup.picasso.NetworkPolicy;
+import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
 import java.io.File;
 import java.io.IOException;
@@ -90,10 +96,10 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     private EditText extraCostEdtText;
     private Spinner listingTypeSpinner;
 
-    private SelectedImageInfo mainPictureInfo;
+    private ImageView mainPictureView;
     private boolean mainPictureSelected;
 
-    private List<SelectedImageInfo> additionalImages;
+    private List<Bitmap> additionalImagesBitmaps;
     private EditText rulesEdtText;
     private EditText descriptionEdtText;
     private EditText bedsEdtText;
@@ -114,8 +120,6 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     private ListView availabilityRangesListView;
     private AvailabilityRangesAdapter availabilityRangesAdapter;
 
-    private ImageView mainPictureView;
-
     private RecyclerView additionalImagesView;
     private SelectedImagesAdapter additionalImagesAdapter;
 
@@ -123,6 +127,31 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     private Button deleteButton;
 
     private LatLng presetLatLng;
+
+    // Strong reference for image loading targets - To avoid GC
+    private Target mainImageLoadTarget = new Target() {
+        @Override
+        public void onBitmapLoaded(
+                Bitmap bitmap,
+                Picasso.LoadedFrom from) {
+            setMainPictureFromBitmap(bitmap);
+        }
+
+        @Override
+        public void onBitmapFailed(
+                Exception e,
+                Drawable errorDrawable) {
+            e.printStackTrace();
+            Utils.makeInternalErrorToast(HostActivity.this);
+        }
+
+        @Override
+        public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+        }
+    };
+
+    private List<Target> additionalImageLoadTargets = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -335,7 +364,7 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
                                                      REQUEST_MAIN_IMAGE_PICK_CODE);
                 break;
             case REQUEST_MAIN_IMAGE_PICK_CODE:
-                setMainPicture(data);
+                setSelectedMainPicture(data);
                 break;
             case REQUEST_ADDITIONAL_IMAGE_PERMISSIONS_CODE:
                 ImageSelectionUtils.requestSelection(this,
@@ -343,7 +372,7 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
                                                      REQUEST_ADDITIONAL_IMAGE_PICK_CODE);
                 break;
             case REQUEST_ADDITIONAL_IMAGE_PICK_CODE:
-                addAdditionalPicture(data);
+                addSelectedAdditionalPicture(data);
                 break;
             case REQUEST_LOCATION_PERMISSIONS_CODE:
                 getCurrentLocation();
@@ -351,22 +380,26 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private void setMainPicture(Intent data) {
-        SelectedImageInfo selectedImageInfo = ImageSelectionUtils.getSelectedImageInfo(this,
-                                                                                       data);
-        mainPictureView.setImageBitmap(selectedImageInfo.getBitmap());
-        mainPictureInfo = selectedImageInfo;
+    private void setSelectedMainPicture(Intent data) {
+        Bitmap mainPictureBitmap = ImageSelectionUtils.getSelectedImageBitmap(this,
+                                                                              data);
+        setMainPictureFromBitmap(mainPictureBitmap);
+    }
+
+    private void setMainPictureFromBitmap(Bitmap bitmat) {
+        mainPictureView.setImageBitmap(bitmat);
         mainPictureSelected = true;
     }
+
 
     private void initializeAdditionalImagesView() {
         additionalImagesView = (RecyclerView) findViewById(R.id.host_additional_pictures);
         additionalImagesView.setLayoutManager(new LinearLayoutManager(this,
                                                                       LinearLayoutManager.HORIZONTAL,
                                                                       false));
-        additionalImages = new ArrayList<>();
+        additionalImagesBitmaps = new ArrayList<>();
         additionalImagesAdapter = new SelectedImagesAdapter(R.layout.host_additional_picture,
-                                                            additionalImages);
+                                                            additionalImagesBitmaps);
         additionalImagesView.setAdapter(additionalImagesAdapter);
 
         findViewById(R.id.host_btnAddPictures).setOnClickListener((view) ->
@@ -376,11 +409,10 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
                                                                                                                             REQUEST_ADDITIONAL_IMAGE_PICK_CODE));
     }
 
-    private void addAdditionalPicture(Intent data) {
-        SelectedImageInfo selectedImageInfo = ImageSelectionUtils.getSelectedImageInfo(this,
-                                                                                       data);
-        additionalImages.add(selectedImageInfo);
-        additionalImagesAdapter.notifyDataSetChanged();
+    private void addSelectedAdditionalPicture(Intent data) {
+        Bitmap additionalImageBitmap = ImageSelectionUtils.getSelectedImageBitmap(this,
+                                                                                  data);
+        addAdditionalImageBitmapSynchronized(additionalImageBitmap);
     }
 
     private void overrideScrollOperations() {
@@ -735,12 +767,26 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
         if (!mainPictureSelected) {
             throw new InvalidInputException(R.string.host_missing_main_picture);
         }
-        File mainImageFile = new File(mainPictureInfo.getPath());
 
-        ArrayList<File> additionalImageFiles = new ArrayList<>(additionalImages.size());
-        for (int i = 0; i < additionalImages.size(); i++) {
-            SelectedImageInfo selectedImageInfo = additionalImages.get(i);
-            additionalImageFiles.add(new File(selectedImageInfo.getPath()));
+        File mainImageTempFile = null;
+        try {
+            mainImageTempFile = createTempListingPictureFromBitmap(
+                    "mainImage",
+                    ImageUtils.getBitmapFromImageView(mainPictureView));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        ArrayList<File> additionalImageFiles = new ArrayList<>(additionalImagesBitmaps.size());
+        for (int i = 0; i < additionalImagesBitmaps.size(); i++) {
+            Bitmap additionalImageBitmap = additionalImagesBitmaps.get(i);
+            try {
+                File additionalImageTempFile = createTempListingPictureFromBitmap("additionalImage_" + String.valueOf(i + 1),
+                                                                                  additionalImageBitmap);
+                additionalImageFiles.add(additionalImageTempFile);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         LatLng addressLatLng = getAddressTextLocation();
@@ -761,9 +807,20 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
                 listingArea,
                 hasLivingRoom,
                 availabilityRanges,
-                mainImageFile,
+                mainImageTempFile,
                 additionalImageFiles
         );
+    }
+
+    private File createTempListingPictureFromBitmap(
+            String tempFilePrefix,
+            Bitmap bitmap) throws IOException {
+        return FileUtils.createTempFileFromBitmap(this,
+                                                  tempFilePrefix,
+                                                  Constants.LISTING_PICTURE_EXTENSION,
+                                                  bitmap,
+                                                  Constants.LISTING_PICTURE_BITMAP_COMPRESS_FORMAT,
+                                                  Constants.LISTING_PICTURE_QUALITY);
     }
 
     private void displayInvalidInputMessage(int strResource) {
@@ -883,12 +940,55 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
             listingTypeSpinner.setSelection(getListingTypePosition(listingType));
         }
 
+        // Reinitialize main image view
+        initializeMainImageView();
         if (mainPicturePath != null) {
-            PicassoTrustAll.getInstance(this).load(Paths.get(Constants.BASE_URL,
-                                                             mainPicturePath).toString())
+            PicassoTrustAll.getInstance(this).load(RequestUtils.getUrlForServerFilePath(mainPicturePath))
                     .networkPolicy(NetworkPolicy.NO_CACHE)
-                    .memoryPolicy(MemoryPolicy.NO_CACHE).into(mainPictureView);
-            mainPictureSelected = true;
+                    .memoryPolicy(MemoryPolicy.NO_CACHE).into(mainImageLoadTarget);
+        }
+
+        // Clear additional images
+        additionalImagesBitmaps.clear();
+        additionalImagesAdapter.notifyDataSetChanged();
+
+        if (additionalPicturesPaths != null) {
+            additionalImageLoadTargets.clear();
+
+            for (String additionalPicturePath : additionalPicturesPaths) {
+
+                // One target per additional image load
+                Target additionalImageLoadTarget = new Target() {
+                    @Override
+                    public void onBitmapLoaded(
+                            Bitmap bitmap,
+                            Picasso.LoadedFrom from) {
+                        addAdditionalImageBitmapSynchronized(bitmap);
+                    }
+
+                    @Override
+                    public void onBitmapFailed(
+                            Exception e,
+                            Drawable errorDrawable) {
+                        e.printStackTrace();
+                        Utils.makeInternalErrorToast(HostActivity.this);
+                    }
+
+                    @Override
+                    public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+                    }
+                };
+
+                // Keep inside the global list to avoid GC
+                additionalImageLoadTargets.add(additionalImageLoadTarget);
+
+                PicassoTrustAll.getInstance(this).load(RequestUtils.getUrlForServerFilePath(additionalPicturePath))
+                        .networkPolicy(NetworkPolicy.NO_CACHE)
+                        .memoryPolicy(MemoryPolicy.NO_CACHE).into(additionalImageLoadTarget);
+            }
+
+            additionalImagesAdapter.notifyDataSetChanged();
         }
 
         rulesEdtText.setText(rules);
@@ -903,6 +1003,12 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
         areaEdtText.setText(Utils.getIntegerStringOrDefault(area,
                                                             ""));
     }
+
+    private synchronized void addAdditionalImageBitmapSynchronized(Bitmap bitmap) {
+        additionalImagesBitmaps.add(bitmap);
+        additionalImagesAdapter.notifyDataSetChanged();
+    }
+
 
     private void replaceAvailabilityRangesWith(List<AvailabilityRange> availabilityRanges) {
         this.availabilityRanges.clear();

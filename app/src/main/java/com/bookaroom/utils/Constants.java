@@ -1,6 +1,7 @@
 package com.bookaroom.utils;
 
 import android.Manifest;
+import android.graphics.Bitmap;
 
 public class Constants {
 
@@ -15,6 +16,15 @@ public class Constants {
     public static final String[] READ_LOCATION_PERMISSIONS_ARRAY = {Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION};
 
     public static final int PROFILE_PICTURE_QUALITY = 90;
+    public static final String PROFILE_PICTURE_EXTENSION = "png";
+    public static final Bitmap.CompressFormat PROFILE_PICTURE_BITMAP_COMPRESS_FORMAT =
+            Bitmap.CompressFormat.PNG;
+
+    public static final int LISTING_PICTURE_QUALITY = 90;
+    public static final String LISTING_PICTURE_EXTENSION = "png";
+    public static final Bitmap.CompressFormat LISTING_PICTURE_BITMAP_COMPRESS_FORMAT =
+            Bitmap.CompressFormat.PNG;
+
     public static final float DEFAULT_MAP_ZOOM = 20;
     public static final String DEFAULT_COUNTRY = "GR";
 

@@ -1,5 +1,6 @@
 package com.bookaroom.adapters;
 
+import android.graphics.Bitmap;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,7 +17,7 @@ import java.util.List;
 
 public class SelectedImagesAdapter extends RecyclerView.Adapter<SelectedImagesAdapter.SelectedImageViewHolder> {
     private int resource;
-    private List<SelectedImageInfo> selectedImages;
+    private List<Bitmap> selectedImages;
 
     public static class SelectedImageViewHolder extends RecyclerView.ViewHolder {
         private ImageView imageView;
@@ -29,7 +30,7 @@ public class SelectedImagesAdapter extends RecyclerView.Adapter<SelectedImagesAd
         }
     }
 
-    public SelectedImagesAdapter(int resource, List<SelectedImageInfo> selectedImages) {
+    public SelectedImagesAdapter(int resource, List<Bitmap> selectedImages) {
         this.resource = resource;
         this.selectedImages = selectedImages;
     }
@@ -43,8 +44,8 @@ public class SelectedImagesAdapter extends RecyclerView.Adapter<SelectedImagesAd
 
     @Override
     public void onBindViewHolder(SelectedImageViewHolder vh, int position) {
-        SelectedImageInfo selectedImage = selectedImages.get(position);
-        vh.imageView.setImageBitmap(selectedImage.getBitmap());
+        Bitmap selectedImageBitmap = selectedImages.get(position);
+        vh.imageView.setImageBitmap(selectedImageBitmap);
 
         setupSelfRemoveButton(vh.removeButton, position);
     }

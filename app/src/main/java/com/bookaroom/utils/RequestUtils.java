@@ -5,6 +5,7 @@ import com.bookaroom.interfaces.RequestStringConvertible;
 import com.google.gson.Gson;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -78,5 +79,10 @@ public class RequestUtils {
         }
 
         return requestString.toString();
+    }
+
+    public static String getUrlForServerFilePath(String serverFilePath) {
+        return Paths.get(Constants.BASE_URL,
+                  serverFilePath).toString();
     }
 }
