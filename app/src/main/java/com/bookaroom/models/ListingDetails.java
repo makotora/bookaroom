@@ -199,4 +199,27 @@ public class ListingDetails {
     public void setAdditionalPictures(ArrayList<File> additionalPictures) {
         this.additionalPictures = additionalPictures;
     }
+
+    @Override
+    public String toString() {
+        return "ListingDetails{" +
+                "address='" + address + '\'' +
+                ", longitude=" + longitude +
+                ", latitude=" + latitude +
+                ", maxGuests=" + maxGuests +
+                ", minPrice=" + minPrice +
+                ", costPerExtraGuest=" + costPerExtraGuest +
+                ", type=" + type +
+                ", rules='" + rules + '\'' +
+                ", description='" + description + '\'' +
+                ", numberOfBeds=" + numberOfBeds +
+                ", numberOfBathrooms=" + numberOfBathrooms +
+                ", numberOfBedrooms=" + numberOfBedrooms +
+                ", area=" + area +
+                ", hasLivingRoom=" + hasLivingRoom +
+                ", availabilityRanges=" + availabilityRanges +
+                ", mainPicture=" + mainPicture +
+                ", additionalPictures=" + additionalPictures +
+                '}';
+    }
 }

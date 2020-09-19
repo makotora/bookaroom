@@ -33,11 +33,19 @@ public class RequestUtils {
     }
 
     public static RequestBody getRequestBodyForObject(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+
         return RequestBody.create(
                 okhttp3.MultipartBody.FORM, new Gson().toJson(obj));
     }
 
     public static <E> RequestBody getRequestBodyForList(List<E> list) {
+        if (list == null) {
+            return null;
+        }
+
         return RequestBody.create(
                 okhttp3.MultipartBody.FORM, new Gson().toJson(list));
     }

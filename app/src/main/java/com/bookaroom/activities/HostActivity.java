@@ -441,6 +441,7 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
             setMapLocation(googleMap,
                            "",
                            presetLatLng);
+            return;
         }
         LatLng currentLocationLatLng = new LatLng(currentLocation.getLatitude(),
                                                   currentLocation.getLongitude());
