@@ -899,7 +899,7 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
                                                                  ""));
         bedroomsEdtText.setText(Utils.getIntegerStringOrDefault(bedrooms,
                                                                 ""));
-        hasLivingRoomCheckBox.setSelected(hasLivingRoom == null ? false : hasLivingRoom.booleanValue());
+        hasLivingRoomCheckBox.setChecked(hasLivingRoom == null ? false : hasLivingRoom.booleanValue());
         areaEdtText.setText(Utils.getIntegerStringOrDefault(area,
                                                             ""));
     }
