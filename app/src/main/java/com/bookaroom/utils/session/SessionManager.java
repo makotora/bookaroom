@@ -1,4 +1,4 @@
-package com.bookaroom.utils;
+package com.bookaroom.utils.session;
 
 import android.app.Activity;
 import android.content.Context;

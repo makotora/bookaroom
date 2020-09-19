@@ -11,8 +11,8 @@ import com.bookaroom.models.LoginRequest;
 import com.bookaroom.remote.ApiUtils;
 import com.bookaroom.remote.services.UserService;
 import com.bookaroom.utils.Constants;
-import com.bookaroom.utils.NavigationUtils;
-import com.bookaroom.utils.SessionManager;
+import com.bookaroom.utils.navigation.NavigationUtils;
+import com.bookaroom.utils.session.SessionManager;
 import com.bookaroom.utils.Utils;
 
 import retrofit2.Call;

@@ -1,4 +1,4 @@
-package com.bookaroom.utils.listeners;
+package com.bookaroom.utils;
 
 import android.Manifest;
 import android.app.Activity;
@@ -17,7 +17,7 @@ import com.bookaroom.utils.dto.SelectedImageInfo;
 
 import java.io.IOException;
 
-public class ImageSelectionHelper {
+public class ImageSelectionUtils {
 
     public static void requestSelectionOrPermissions(Activity currentActivity, String selectImageMessage, int permissionsRequestCode, int pickImageRequestCode) {
         if (ActivityCompat.checkSelfPermission(currentActivity, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {

@@ -1,4 +1,4 @@
-package com.bookaroom.utils;
+package com.bookaroom.utils.navigation;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -8,6 +8,7 @@ import com.bookaroom.R;
 import com.bookaroom.activities.HomeActivity;
 import com.bookaroom.activities.HostActivity;
 import com.bookaroom.activities.RegisterActivity;
+import com.bookaroom.utils.Utils;
 import com.bookaroom.utils.navigation.ActivityNavigationInfo;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 

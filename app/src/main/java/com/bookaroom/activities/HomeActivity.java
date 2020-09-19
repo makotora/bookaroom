@@ -5,7 +5,7 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bookaroom.R;
-import com.bookaroom.utils.NavigationUtils;
+import com.bookaroom.utils.navigation.NavigationUtils;
 
 
 public class HomeActivity extends AppCompatActivity {

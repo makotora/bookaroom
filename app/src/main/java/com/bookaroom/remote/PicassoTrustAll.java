@@ -4,7 +4,6 @@ import android.content.Context;
 import android.util.Log;
 
 import com.bookaroom.remote.client.SelfSignCertHttpClient;
-import com.bookaroom.utils.InterceptorFactory;
 import com.squareup.picasso.OkHttp3Downloader;
 import com.squareup.picasso.Picasso;
 

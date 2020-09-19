@@ -11,14 +11,13 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
-import android.text.DynamicLayout;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewStub;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -43,12 +42,12 @@ import com.bookaroom.remote.ApiUtils;
 import com.bookaroom.remote.PicassoTrustAll;
 import com.bookaroom.remote.services.ListingService;
 import com.bookaroom.utils.Constants;
-import com.bookaroom.utils.NavigationUtils;
+import com.bookaroom.utils.navigation.NavigationUtils;
 import com.bookaroom.utils.RequestUtils;
 import com.bookaroom.utils.ResponseUtils;
 import com.bookaroom.utils.Utils;
 import com.bookaroom.utils.dto.SelectedImageInfo;
-import com.bookaroom.utils.listeners.ImageSelectionHelper;
+import com.bookaroom.utils.ImageSelectionUtils;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -62,9 +61,9 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.libraries.places.api.Places;
 import com.squareup.picasso.MemoryPolicy;
 import com.squareup.picasso.NetworkPolicy;
-import com.squareup.picasso.Picasso;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
@@ -301,10 +300,10 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     private void initializeMainImageView() {
         mainPictureView = (ImageView) findViewById(R.id.host_main_image);
         mainPictureView.setImageResource(R.drawable.select_image);
-        mainPictureView.setOnClickListener((view) -> ImageSelectionHelper.requestSelectionOrPermissions(this,
-                                                                                                        getMainImageSelectionString(),
-                                                                                                        REQUEST_MAIN_IMAGE_PERMISSIONS_CODE,
-                                                                                                        REQUEST_MAIN_IMAGE_PICK_CODE));
+        mainPictureView.setOnClickListener((view) -> ImageSelectionUtils.requestSelectionOrPermissions(this,
+                                                                                                       getMainImageSelectionString(),
+                                                                                                       REQUEST_MAIN_IMAGE_PERMISSIONS_CODE,
+                                                                                                       REQUEST_MAIN_IMAGE_PICK_CODE));
 
         mainPictureSelected = false;
     }
@@ -331,17 +330,17 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
 
         switch (requestCode) {
             case REQUEST_MAIN_IMAGE_PERMISSIONS_CODE:
-                ImageSelectionHelper.requestSelection(this,
-                                                      getMainImageSelectionString(),
-                                                      REQUEST_MAIN_IMAGE_PICK_CODE);
+                ImageSelectionUtils.requestSelection(this,
+                                                     getMainImageSelectionString(),
+                                                     REQUEST_MAIN_IMAGE_PICK_CODE);
                 break;
             case REQUEST_MAIN_IMAGE_PICK_CODE:
                 setMainPicture(data);
                 break;
             case REQUEST_ADDITIONAL_IMAGE_PERMISSIONS_CODE:
-                ImageSelectionHelper.requestSelection(this,
-                                                      getAdditionalImageSelectionString(),
-                                                      REQUEST_ADDITIONAL_IMAGE_PICK_CODE);
+                ImageSelectionUtils.requestSelection(this,
+                                                     getAdditionalImageSelectionString(),
+                                                     REQUEST_ADDITIONAL_IMAGE_PICK_CODE);
                 break;
             case REQUEST_ADDITIONAL_IMAGE_PICK_CODE:
                 addAdditionalPicture(data);
@@ -353,8 +352,8 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void setMainPicture(Intent data) {
-        SelectedImageInfo selectedImageInfo = ImageSelectionHelper.getSelectedImageInfo(this,
-                                                                                        data);
+        SelectedImageInfo selectedImageInfo = ImageSelectionUtils.getSelectedImageInfo(this,
+                                                                                       data);
         mainPictureView.setImageBitmap(selectedImageInfo.getBitmap());
         mainPictureInfo = selectedImageInfo;
         mainPictureSelected = true;
@@ -371,15 +370,15 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
         additionalImagesView.setAdapter(additionalImagesAdapter);
 
         findViewById(R.id.host_btnAddPictures).setOnClickListener((view) ->
-                                                                          ImageSelectionHelper.requestSelectionOrPermissions(this,
-                                                                                                                             getMainImageSelectionString(),
-                                                                                                                             REQUEST_ADDITIONAL_IMAGE_PERMISSIONS_CODE,
-                                                                                                                             REQUEST_ADDITIONAL_IMAGE_PICK_CODE));
+                                                                          ImageSelectionUtils.requestSelectionOrPermissions(this,
+                                                                                                                            getMainImageSelectionString(),
+                                                                                                                            REQUEST_ADDITIONAL_IMAGE_PERMISSIONS_CODE,
+                                                                                                                            REQUEST_ADDITIONAL_IMAGE_PICK_CODE));
     }
 
     private void addAdditionalPicture(Intent data) {
-        SelectedImageInfo selectedImageInfo = ImageSelectionHelper.getSelectedImageInfo(this,
-                                                                                        data);
+        SelectedImageInfo selectedImageInfo = ImageSelectionUtils.getSelectedImageInfo(this,
+                                                                                       data);
         additionalImages.add(selectedImageInfo);
         additionalImagesAdapter.notifyDataSetChanged();
     }
@@ -884,12 +883,13 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
             listingTypeSpinner.setSelection(getListingTypePosition(listingType));
         }
 
-        PicassoTrustAll.getInstance(this).load(Paths.get(Constants.BASE_URL,
-                                                         mainPicturePath).toString())
-                .networkPolicy(NetworkPolicy.NO_CACHE)
-                .memoryPolicy(MemoryPolicy.NO_CACHE).into(mainPictureView);
-
-        // TODO additional pictures
+        if (mainPicturePath != null) {
+            PicassoTrustAll.getInstance(this).load(Paths.get(Constants.BASE_URL,
+                                                             mainPicturePath).toString())
+                    .networkPolicy(NetworkPolicy.NO_CACHE)
+                    .memoryPolicy(MemoryPolicy.NO_CACHE).into(mainPictureView);
+            mainPictureSelected = true;
+        }
 
         rulesEdtText.setText(rules);
         descriptionEdtText.setText(description);

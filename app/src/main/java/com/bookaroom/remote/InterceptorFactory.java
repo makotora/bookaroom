@@ -1,7 +1,9 @@
-package com.bookaroom.utils;
+package com.bookaroom.remote;
 
-import android.app.Activity;
 import android.content.Context;
+
+import com.bookaroom.utils.Constants;
+import com.bookaroom.utils.session.SessionManager;
 
 import java.io.IOException;
 
