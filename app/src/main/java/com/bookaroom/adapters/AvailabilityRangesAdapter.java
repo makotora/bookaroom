@@ -115,7 +115,7 @@ public class AvailabilityRangesAdapter extends ArrayAdapter<AvailabilityRange> i
     private Date getDate(int day, int month, int year) {
         Calendar cal = Calendar.getInstance();
         cal.set(Calendar.DAY_OF_MONTH, day);
-        cal.set(Calendar.MONTH, month);
+        cal.set(Calendar.MONTH, month - 1);
         cal.set(Calendar.YEAR, year);
 
         return cal.getTime();
@@ -127,7 +127,7 @@ public class AvailabilityRangesAdapter extends ArrayAdapter<AvailabilityRange> i
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
 
-        return padDateDigit(String.valueOf(cal.get(Calendar.DAY_OF_MONTH))) + "/" + padDateDigit(String.valueOf(cal.get(Calendar.MONTH))) + "/" + String.valueOf(cal.get(Calendar.YEAR));
+        return padDateDigit(String.valueOf(cal.get(Calendar.DAY_OF_MONTH))) + "/" + padDateDigit(String.valueOf(cal.get(Calendar.MONTH) + 1)) + "/" + String.valueOf(cal.get(Calendar.YEAR));
     }
 
     private String padDateDigit(String digitString) {

@@ -57,7 +57,7 @@ public class RegisterActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
-        userService = ApiUtils.getUserService();
+        userService = ApiUtils.getUserService(this);
 
         initializeFormData();
         setOnClickListeners();

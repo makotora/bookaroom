@@ -66,4 +66,5 @@
     <string name="host_invalid_listing_area">Please enter a valid area for your listing</string>
     <string name="host_missing_availability_dates">Please enter availability dates for your listing</string>
     <string name="host_missing_main_picture">Please pick a main picture for your listing</string>
+    <string name="error_http_failure">Request failed</string>
 </resources>

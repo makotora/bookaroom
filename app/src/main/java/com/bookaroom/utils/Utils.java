@@ -4,8 +4,13 @@ import android.app.Activity;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.core.util.Consumer;
+
 import com.bookaroom.R;
 import com.bookaroom.activities.HostActivity;
+import com.bookaroom.models.ActionResponse;
+
+import retrofit2.Response;
 
 public class Utils {
 
@@ -65,5 +70,35 @@ public class Utils {
 
     public static void displayInvalidInputMessage(Activity currentActivity, int strResource) {
         Toast.makeText(currentActivity, strResource, Toast.LENGTH_SHORT).show();
+    }
+
+    public static String getIntegerStringOrDefault(
+            Integer value,
+            String defaultString) {
+        if (value == null) {
+            return defaultString;
+        }
+
+        try {
+            return String.valueOf(value);
+        }
+        catch (Exception e) {
+            return defaultString;
+        }
+    }
+
+    public static String getDoubleStringOrDefault(
+            Double value,
+            String defaultString) {
+        if (value == null) {
+            return defaultString;
+        }
+
+        try {
+            return String.valueOf(value);
+        }
+        catch (Exception e) {
+            return defaultString;
+        }
     }
 }

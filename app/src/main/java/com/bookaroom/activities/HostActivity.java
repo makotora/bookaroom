@@ -15,9 +15,10 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
-import android.util.Log;
+import android.text.DynamicLayout;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewStub;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -37,11 +38,14 @@ import com.bookaroom.adapters.data.AvailabilityRange;
 import com.bookaroom.exceptions.InvalidInputException;
 import com.bookaroom.models.ActionResponse;
 import com.bookaroom.models.ListingDetails;
+import com.bookaroom.models.ListingResponse;
 import com.bookaroom.remote.ApiUtils;
+import com.bookaroom.remote.PicassoTrustAll;
 import com.bookaroom.remote.services.ListingService;
 import com.bookaroom.utils.Constants;
 import com.bookaroom.utils.NavigationUtils;
 import com.bookaroom.utils.RequestUtils;
+import com.bookaroom.utils.ResponseUtils;
 import com.bookaroom.utils.Utils;
 import com.bookaroom.utils.dto.SelectedImageInfo;
 import com.bookaroom.utils.listeners.ImageSelectionHelper;
@@ -56,21 +60,22 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.libraries.places.api.Places;
+import com.squareup.picasso.MemoryPolicy;
+import com.squareup.picasso.NetworkPolicy;
+import com.squareup.picasso.Picasso;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class HostActivity extends FragmentActivity implements OnMapReadyCallback {
-    private static final String LOG_TAG = "HostActivity";
-
     private static final int REQUEST_MAIN_IMAGE_PERMISSIONS_CODE = 1;
     private static final int REQUEST_MAIN_IMAGE_PICK_CODE = 2;
     private static final int REQUEST_ADDITIONAL_IMAGE_PERMISSIONS_CODE = 3;
@@ -118,6 +123,8 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     private Button submitButton;
     private Button deleteButton;
 
+    private LatLng presetLatLng;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -130,7 +137,6 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
         initializeSimpleFields();
         initializeGooglePlaces();
         initializeAddressSearch();
-        initializeListingMap();
         initializeAvailabilityRangesView();
         initializeListingTypeSpinner();
 
@@ -139,21 +145,11 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
 
         overrideScrollOperations();
 
-        boolean hostHasListing = false;
-        if (hostHasListing) {
-            setExistingData();
-            initializeDeleteButton();
-        }
-
-        initializeSubmitButton(hostHasListing);
-
-        if (Constants.INITIALIZE_FORMS_WITH_TEST_DATA) {
-            setDummyData();
-        }
+        initializeDataAndButtonsAndDoAsyncOperations();
     }
 
     private void initializeServices() {
-        listingService = ApiUtils.getListingService();
+        listingService = ApiUtils.getListingService(this);
     }
 
     private void initializeSimpleFields() {
@@ -171,7 +167,8 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void initializeGooglePlaces() {
         if (!Places.isInitialized()) {
-            Places.initialize(getApplicationContext(), getResources().getString(R.string.google_api_key));
+            Places.initialize(getApplicationContext(),
+                              getResources().getString(R.string.google_api_key));
         }
     }
 
@@ -185,32 +182,40 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
             public void onClick(View view) {
                 LatLng location = getAddressTextLocation();
                 if (location != null) {
-                    setMapLocation(listingLocationMap, "", location);
+                    setMapLocation(listingLocationMap,
+                                   "",
+                                   location);
                 }
             }
         });
     }
 
     public LatLng getAddressTextLocation() {
-        addressLatLng = getLocationFromAddress(HostActivity.this, addressEdtText.getText().toString());
+        addressLatLng = getLocationFromAddress(HostActivity.this,
+                                               addressEdtText.getText().toString());
         return addressLatLng;
     }
 
 
-    public LatLng getLocationFromAddress(Context context, String strAddress) {
+    public LatLng getLocationFromAddress(
+            Context context,
+            String strAddress) {
 
-        Geocoder coder = new Geocoder(context, Locale.getDefault());
+        Geocoder coder = new Geocoder(context,
+                                      Locale.getDefault());
         List<Address> possibleAddresses;
         LatLng latLng = null;
 
         try {
-            possibleAddresses = coder.getFromLocationName(strAddress, 1);
+            possibleAddresses = coder.getFromLocationName(strAddress,
+                                                          1);
             if (possibleAddresses == null) {
                 return null;
             }
             Address location = possibleAddresses.get(0);
 
-            latLng = new LatLng(location.getLatitude(), location.getLongitude() );
+            latLng = new LatLng(location.getLatitude(),
+                                location.getLongitude());
 
         } catch (Exception ex) {
 
@@ -226,8 +231,12 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void getPermissionsOrCurrentLocation() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, Constants.READ_LOCATION_PERMISSIONS_ARRAY, REQUEST_LOCATION_PERMISSIONS_CODE);
+        if (ActivityCompat.checkSelfPermission(this,
+                                               Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
+                                                                                                                                                                    Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                                              Constants.READ_LOCATION_PERMISSIONS_ARRAY,
+                                              REQUEST_LOCATION_PERMISSIONS_CODE);
             return;
         }
 
@@ -257,14 +266,17 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
         availabilityRanges = getInitialAvailabilityRanges();
 
         availabilityRangesListView = (ListView) findViewById(R.id.listViewAvailabiliyRanges);
-        availabilityRangesAdapter = new AvailabilityRangesAdapter(this, R.layout.host_availability_dates, availabilityRanges);
+        availabilityRangesAdapter = new AvailabilityRangesAdapter(this,
+                                                                  R.layout.host_availability_dates,
+                                                                  availabilityRanges);
         availabilityRangesListView.setAdapter(availabilityRangesAdapter);
 
         findViewById(R.id.host_btnAddDates).setOnClickListener((view) -> addAvailabilityDatesRow());
     }
 
     private ArrayList<AvailabilityRange> getInitialAvailabilityRanges() {
-        AvailabilityRange initialAvailabilityRange = new AvailabilityRange(new Date(), new Date());
+        AvailabilityRange initialAvailabilityRange = new AvailabilityRange(new Date(),
+                                                                           new Date());
         ArrayList<AvailabilityRange> availabilityRanges = new ArrayList<AvailabilityRange>(1);
         availabilityRanges.add(initialAvailabilityRange);
 
@@ -279,7 +291,9 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void initializeListingTypeSpinner() {
         listingTypeSpinner = (Spinner) findViewById(R.id.spinnerListingType);
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, ListingType.names());
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
+                                                                android.R.layout.simple_spinner_item,
+                                                                ListingType.names());
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         listingTypeSpinner.setAdapter(adapter);
     }
@@ -287,7 +301,10 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     private void initializeMainImageView() {
         mainPictureView = (ImageView) findViewById(R.id.host_main_image);
         mainPictureView.setImageResource(R.drawable.select_image);
-        mainPictureView.setOnClickListener((view) -> ImageSelectionHelper.requestSelectionOrPermissions(this, getMainImageSelectionString(), REQUEST_MAIN_IMAGE_PERMISSIONS_CODE, REQUEST_MAIN_IMAGE_PICK_CODE));
+        mainPictureView.setOnClickListener((view) -> ImageSelectionHelper.requestSelectionOrPermissions(this,
+                                                                                                        getMainImageSelectionString(),
+                                                                                                        REQUEST_MAIN_IMAGE_PERMISSIONS_CODE,
+                                                                                                        REQUEST_MAIN_IMAGE_PICK_CODE));
 
         mainPictureSelected = false;
     }
@@ -301,21 +318,30 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    public void onActivityResult(
+            int requestCode,
+            int resultCode,
+            Intent data) {
+        super.onActivityResult(requestCode,
+                               resultCode,
+                               data);
         if (resultCode != Activity.RESULT_OK) {
             return;
         }
 
         switch (requestCode) {
             case REQUEST_MAIN_IMAGE_PERMISSIONS_CODE:
-                ImageSelectionHelper.requestSelection(this, getMainImageSelectionString(), REQUEST_MAIN_IMAGE_PICK_CODE);
+                ImageSelectionHelper.requestSelection(this,
+                                                      getMainImageSelectionString(),
+                                                      REQUEST_MAIN_IMAGE_PICK_CODE);
                 break;
             case REQUEST_MAIN_IMAGE_PICK_CODE:
                 setMainPicture(data);
                 break;
             case REQUEST_ADDITIONAL_IMAGE_PERMISSIONS_CODE:
-                ImageSelectionHelper.requestSelection(this, getAdditionalImageSelectionString(), REQUEST_ADDITIONAL_IMAGE_PICK_CODE);
+                ImageSelectionHelper.requestSelection(this,
+                                                      getAdditionalImageSelectionString(),
+                                                      REQUEST_ADDITIONAL_IMAGE_PICK_CODE);
                 break;
             case REQUEST_ADDITIONAL_IMAGE_PICK_CODE:
                 addAdditionalPicture(data);
@@ -327,7 +353,8 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void setMainPicture(Intent data) {
-        SelectedImageInfo selectedImageInfo = ImageSelectionHelper.getSelectedImageInfo(this, data);
+        SelectedImageInfo selectedImageInfo = ImageSelectionHelper.getSelectedImageInfo(this,
+                                                                                        data);
         mainPictureView.setImageBitmap(selectedImageInfo.getBitmap());
         mainPictureInfo = selectedImageInfo;
         mainPictureSelected = true;
@@ -335,18 +362,24 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void initializeAdditionalImagesView() {
         additionalImagesView = (RecyclerView) findViewById(R.id.host_additional_pictures);
-        additionalImagesView.setLayoutManager(new LinearLayoutManager(this,LinearLayoutManager.HORIZONTAL, false));
+        additionalImagesView.setLayoutManager(new LinearLayoutManager(this,
+                                                                      LinearLayoutManager.HORIZONTAL,
+                                                                      false));
         additionalImages = new ArrayList<>();
-        additionalImagesAdapter = new SelectedImagesAdapter(R.layout.host_additional_picture, additionalImages);
+        additionalImagesAdapter = new SelectedImagesAdapter(R.layout.host_additional_picture,
+                                                            additionalImages);
         additionalImagesView.setAdapter(additionalImagesAdapter);
 
         findViewById(R.id.host_btnAddPictures).setOnClickListener((view) ->
-                ImageSelectionHelper.requestSelectionOrPermissions(this, getMainImageSelectionString(),
-                        REQUEST_ADDITIONAL_IMAGE_PERMISSIONS_CODE, REQUEST_ADDITIONAL_IMAGE_PICK_CODE));
+                                                                          ImageSelectionHelper.requestSelectionOrPermissions(this,
+                                                                                                                             getMainImageSelectionString(),
+                                                                                                                             REQUEST_ADDITIONAL_IMAGE_PERMISSIONS_CODE,
+                                                                                                                             REQUEST_ADDITIONAL_IMAGE_PICK_CODE));
     }
 
     private void addAdditionalPicture(Intent data) {
-        SelectedImageInfo selectedImageInfo = ImageSelectionHelper.getSelectedImageInfo(this, data);
+        SelectedImageInfo selectedImageInfo = ImageSelectionHelper.getSelectedImageInfo(this,
+                                                                                        data);
         additionalImages.add(selectedImageInfo);
         additionalImagesAdapter.notifyDataSetChanged();
     }
@@ -357,7 +390,9 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
 
         parentScroll.setOnTouchListener(new View.OnTouchListener() {
             @Override
-            public boolean onTouch(View v, MotionEvent event) {
+            public boolean onTouch(
+                    View v,
+                    MotionEvent event) {
                 availabilityRangesScroll.getParent().requestDisallowInterceptTouchEvent(false);
                 return false;
             }
@@ -365,8 +400,9 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
 
         availabilityRangesScroll.setOnTouchListener(new View.OnTouchListener() {
 
-            public boolean onTouch(View v, MotionEvent event)
-            {
+            public boolean onTouch(
+                    View v,
+                    MotionEvent event) {
                 v.getParent().requestDisallowInterceptTouchEvent(true);
                 return false;
             }
@@ -376,7 +412,9 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
         transparentImageView.setOnTouchListener(new View.OnTouchListener() {
 
             @Override
-            public boolean onTouch(View v, MotionEvent event) {
+            public boolean onTouch(
+                    View v,
+                    MotionEvent event) {
                 int action = event.getAction();
                 switch (action) {
                     case MotionEvent.ACTION_DOWN:
@@ -399,26 +437,78 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         listingLocationMap = googleMap;
 
-        LatLng currentLocationLatLng = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
-        setMapLocation(googleMap, "Your location", currentLocationLatLng);
+        if (presetLatLng != null) {
+            setMapLocation(googleMap,
+                           "",
+                           presetLatLng);
+        }
+        LatLng currentLocationLatLng = new LatLng(currentLocation.getLatitude(),
+                                                  currentLocation.getLongitude());
+        setMapLocation(googleMap,
+                       "Your location",
+                       currentLocationLatLng);
     }
 
-    private void setMapLocation(GoogleMap googleMap, String markerTitle, LatLng currentLocationLatLng) {
+    private void setMapLocation(
+            GoogleMap googleMap,
+            String markerTitle,
+            LatLng currentLocationLatLng) {
         googleMap.clear();
         MarkerOptions currentLocationMO = new MarkerOptions().position(currentLocationLatLng).title(markerTitle);
 
         googleMap.animateCamera(CameraUpdateFactory.newLatLng(currentLocationLatLng));
-        googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocationLatLng, Constants.DEFAULT_MAP_ZOOM));
+        googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocationLatLng,
+                                                                  Constants.DEFAULT_MAP_ZOOM));
         googleMap.addMarker(currentLocationMO);
     }
-
-    // TODO
-    private void setExistingData() {}
 
     private void initializeDeleteButton() {
         LinearLayout deleteButtonLayout = findViewById(R.id.host_delete_button_layout);
         deleteButton = new Button(this);
+        deleteButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                deleteListing();
+            }
+        });
+        deleteButton.setText(getResources().getString(R.string.host_delete_listing));
+        deleteButton.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                                                                   LinearLayout.LayoutParams.MATCH_PARENT));
+        deleteButtonLayout.addView(deleteButton);
+    }
 
+    private void removeDeleteButton() {
+        LinearLayout deleteButtonLayout = findViewById(R.id.host_delete_button_layout);
+        deleteButtonLayout.removeAllViews();
+    }
+
+    private void deleteListing() {
+        Call<ActionResponse> call = listingService.deleteByCurrentUser();
+        call.enqueue(new Callback<ActionResponse>() {
+            @Override
+            public void onResponse(
+                    Call<ActionResponse> call,
+                    Response<ActionResponse> response) {
+                ResponseUtils.handleActionResponse(HostActivity.this,
+                                                   response,
+                                                   ((ar) -> {
+                                                       clearAllForms();
+                                                       initializeSubmitButton(false);
+                                                       removeDeleteButton();
+                                                   }),
+                                                   (ar) -> {
+                                                   });
+            }
+
+            @Override
+            public void onFailure(
+                    Call<ActionResponse> call,
+                    Throwable t) {
+                Toast.makeText(HostActivity.this,
+                               R.string.error_http_failure,
+                               Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void initializeSubmitButton(boolean hasListing) {
@@ -433,8 +523,7 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
                     onCreateClick();
                 }
             };
-        }
-        else {
+        } else {
             buttonTextResource = R.string.host_update_listing;
             submitFormOnClickListener = new View.OnClickListener() {
                 @Override
@@ -463,7 +552,7 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void createListing(ListingDetails listingDetails) {
-        Call call =
+        Call<ActionResponse> call =
                 listingService.create(RequestUtils.getRequestBodyForString(listingDetails.getAddress()),
                                       RequestUtils.getRequestBodyForObject(listingDetails.getLongitude()),
                                       RequestUtils.getRequestBodyForObject(listingDetails.getLatitude()),
@@ -482,38 +571,97 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
                                       RequestUtils.getMultipartBodyPartForFile
                                               (listingDetails.getMainPicture(),
                                                ListingService.LISTING_MAIN_PICTURE_PARAM_NAME
-                                               ),
-                                      RequestUtils.getMultipartsForFiles(listingDetails.getAdditionalPictures(), ListingService.LISTING_ADDITIONAL_PICTURES_PARAM_NAME)
-                                      );
+                                              ),
+                                      RequestUtils.getMultipartsForFiles(listingDetails.getAdditionalPictures(),
+                                                                         ListingService.LISTING_ADDITIONAL_PICTURES_PARAM_NAME)
+                );
 
         call.enqueue(new Callback<ActionResponse>() {
             @Override
-            public void onResponse(Call<ActionResponse> call, Response<ActionResponse> response) {
-                if (response.isSuccessful()) {
-                    ActionResponse actionResponse = response.body();
-
-                    if (actionResponse != null) {
-                        Toast.makeText(HostActivity.this, actionResponse.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-
-                    if (!actionResponse.isSuccess()) {
-                        return;
-                    }
-                }
-                else {
-                    Utils.makeInternalErrorToast(HostActivity.this);
-                }
+            public void onResponse(
+                    Call<ActionResponse> call,
+                    Response<ActionResponse> response) {
+                ResponseUtils.handleActionResponse(HostActivity.this,
+                                                   response,
+                                                   (ar) -> {
+                                                       initializeSubmitButton(true);
+                                                       initializeDeleteButton();
+                                                   },
+                                                   (ar) -> {
+                                                   });
             }
 
             @Override
-            public void onFailure(Call call, Throwable t) {
-                Toast.makeText(HostActivity.this, t.getMessage(), Toast.LENGTH_SHORT).show();
+            public void onFailure(
+                    Call call,
+                    Throwable t) {
+                Toast.makeText(HostActivity.this,
+                               t.getMessage(),
+                               Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    // TODO
     private void onUpdateClick() {
+        ListingDetails listingDetails;
+
+        try {
+            listingDetails = getListingDetailsIfValid();
+        } catch (InvalidInputException e) {
+            displayInvalidInputMessage(e.getErrorStringResource());
+            return;
+        }
+
+        updateListing(listingDetails);
+    }
+
+    private void updateListing(ListingDetails listingDetails) {
+        Call<ActionResponse> call =
+                listingService.update(RequestUtils.getRequestBodyForString(listingDetails.getAddress()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.getLongitude()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.getLatitude()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.getMaxGuests()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.getMinPrice()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.getCostPerExtraGuest()),
+                                      RequestUtils.getRequestBodyForString(listingDetails.getType().name()),
+                                      RequestUtils.getRequestBodyForString(listingDetails.getRules()),
+                                      RequestUtils.getRequestBodyForString(listingDetails.getDescription()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.getNumberOfBeds()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.getNumberOfBathrooms()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.getNumberOfBedrooms()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.getArea()),
+                                      RequestUtils.getRequestBodyForObject(listingDetails.isHasLivingRoom()),
+                                      RequestUtils.getRequestBodyForString(RequestUtils.toRequestString(listingDetails.getAvailabilityRanges())),
+                                      RequestUtils.getMultipartBodyPartForFile
+                                              (listingDetails.getMainPicture(),
+                                               ListingService.LISTING_MAIN_PICTURE_PARAM_NAME
+                                              ),
+                                      RequestUtils.getMultipartsForFiles(listingDetails.getAdditionalPictures(),
+                                                                         ListingService.LISTING_ADDITIONAL_PICTURES_PARAM_NAME)
+                );
+
+        call.enqueue(new Callback<ActionResponse>() {
+            @Override
+            public void onResponse(
+                    Call<ActionResponse> call,
+                    Response<ActionResponse> response) {
+                ResponseUtils.handleActionResponse(HostActivity.this,
+                                                   response,
+                                                   (ar) -> {
+                                                   },
+                                                   (ar) -> {
+                                                   });
+            }
+
+            @Override
+            public void onFailure(
+                    Call call,
+                    Throwable t) {
+                Toast.makeText(HostActivity.this,
+                               t.getMessage(),
+                               Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private ListingDetails getListingDetailsIfValid() throws InvalidInputException {
@@ -540,8 +688,7 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
         ListingType listingType;
         try {
             listingType = ListingType.valueOf(listingTypeSpinner.getSelectedItem().toString());
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new InvalidInputException(R.string.host_invalid_listing_type);
         }
 
@@ -616,11 +763,12 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
                 availabilityRanges,
                 mainImageFile,
                 additionalImageFiles
-                );
+        );
     }
 
     private void displayInvalidInputMessage(int strResource) {
-        Utils.displayInvalidInputMessage(this, strResource);
+        Utils.displayInvalidInputMessage(this,
+                                         strResource);
     }
 
     private void setDummyData() {
@@ -635,5 +783,170 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
         areaEdtText.setText("75");
     }
 
+    private void initializeDataAndButtonsAndDoAsyncOperations() {
+        Call<ListingResponse> call = listingService.getByCurrentUser();
+        call.enqueue(new Callback<ListingResponse>() {
+            @Override
+            public void onResponse(
+                    Call<ListingResponse> call,
+                    Response<ListingResponse> response) {
+                handleListingResponse(response.body());
+            }
+
+            @Override
+            public void onFailure(
+                    Call<ListingResponse> call,
+                    Throwable t) {
+                initializeSubmitButton(false);
+                initializeListingMap();
+
+                if (Constants.INITIALIZE_FORMS_WITH_TEST_DATA) {
+                    setDummyData();
+                }
+            }
+        });
+    }
+
+    private void handleListingResponse(ListingResponse listingResponse) {
+        boolean hostHasListing = listingResponse != null;
+        if (hostHasListing) {
+            setExistingData(listingResponse);
+            initializeDeleteButton();
+        }
+
+        initializeSubmitButton(hostHasListing);
+
+        if (!hostHasListing && Constants.INITIALIZE_FORMS_WITH_TEST_DATA) {
+            setDummyData();
+        }
+
+    }
+
+    private void setExistingData(ListingResponse listingResponse) {
+        setListingData(listingResponse.getAddress(),
+                       listingResponse.getLongitude(),
+                       listingResponse.getLatitude(),
+                       listingResponse.getAvailabilityRanges(),
+                       listingResponse.getMaxGuests(),
+                       listingResponse.getMinPrice(),
+                       listingResponse.getCostPerExtraGuest(),
+                       listingResponse.getTypeStr(),
+                       listingResponse.getMainPicturePath(),
+                       listingResponse.getAdditionalPicturePaths(),
+                       listingResponse.getRules(),
+                       listingResponse.getDescription(),
+                       listingResponse.getNumberOfBeds(),
+                       listingResponse.getNumberOfBathrooms(),
+                       listingResponse.getNumberOfBedrooms(),
+                       listingResponse.isHasLivingRoom(),
+                       listingResponse.getArea());
+    }
+
+    private void setListingData(
+            String address,
+            Double longitude,
+            Double latitude,
+            List<AvailabilityRange> availabilityRanges,
+            Integer maxGuests,
+            Double minPrice,
+            Double extraCost,
+            String typeStr,
+            String mainPicturePath,
+            List<String> additionalPicturesPaths,
+            String rules,
+            String description,
+            Integer beds,
+            Integer bathrooms,
+            Integer bedrooms,
+            Boolean hasLivingRoom,
+            Integer area) {
+        addressEdtText.setText(address);
+
+        if (longitude != null && latitude != null) {
+            presetLatLng = new LatLng(latitude,
+                                      longitude);
+        }
+        initializeListingMap();
+
+        replaceAvailabilityRangesWith(availabilityRanges);
+
+        maxGuestsEdtText.setText(Utils.getIntegerStringOrDefault(maxGuests,
+                                                                 ""));
+        minPriceEdtText.setText(Utils.getDoubleStringOrDefault(minPrice,
+                                                               ""));
+        extraCostEdtText.setText(Utils.getDoubleStringOrDefault(extraCost,
+                                                                ""));
+
+
+        ListingType listingType = getListingType(typeStr);
+        if (listingType != null) {
+            listingTypeSpinner.setSelection(getListingTypePosition(listingType));
+        }
+
+        PicassoTrustAll.getInstance(this).load(Paths.get(Constants.BASE_URL,
+                                                         mainPicturePath).toString())
+                .networkPolicy(NetworkPolicy.NO_CACHE)
+                .memoryPolicy(MemoryPolicy.NO_CACHE).into(mainPictureView);
+
+        // TODO additional pictures
+
+        rulesEdtText.setText(rules);
+        descriptionEdtText.setText(description);
+        bedsEdtText.setText(Utils.getIntegerStringOrDefault(beds,
+                                                            ""));
+        bathroomsEdtText.setText(Utils.getIntegerStringOrDefault(bathrooms,
+                                                                 ""));
+        bedroomsEdtText.setText(Utils.getIntegerStringOrDefault(bedrooms,
+                                                                ""));
+        hasLivingRoomCheckBox.setSelected(hasLivingRoom == null ? false : hasLivingRoom.booleanValue());
+        areaEdtText.setText(Utils.getIntegerStringOrDefault(area,
+                                                            ""));
+    }
+
+    private void replaceAvailabilityRangesWith(List<AvailabilityRange> availabilityRanges) {
+        this.availabilityRanges.clear();
+        this.availabilityRanges.addAll(availabilityRanges);
+        availabilityRangesAdapter.notifyDataSetChanged();
+    }
+
+    private ListingType getListingType(String listingTypeStr) {
+        try {
+            return ListingType.valueOf(listingTypeStr);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private int getListingTypePosition(ListingType targetType) {
+        int i = 0;
+        for (ListingType type : ListingType.values()) {
+            if (type.equals(targetType)) {
+                return i;
+            }
+            i++;
+        }
+
+        return 0;
+    }
+
+    private void clearAllForms() {
+        setListingData("",
+                       null,
+                       null,
+                       getInitialAvailabilityRanges(),
+                       null,
+                       null,
+                       null,
+                       "",
+                       "",
+                       new ArrayList<>(),
+                       "",
+                       "",
+                       null,
+                       null,
+                       null,
+                       null,
+                       null);
+    }
 
 }

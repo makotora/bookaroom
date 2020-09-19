@@ -1,7 +1,11 @@
 package com.bookaroom.remote;
 
+import android.app.Activity;
+import android.content.Context;
+
 import com.bookaroom.remote.client.SelfSignCertHttpClient;
 import com.bookaroom.utils.Constants;
+import com.bookaroom.utils.InterceptorFactory;
 import com.bookaroom.utils.SessionManager;
 
 import java.io.IOException;
@@ -21,12 +25,12 @@ public class RetrofitClient {
     private static Retrofit retrofit = null;
 
 
-    public static Retrofit getClient(String url){
+    public static Retrofit getClient(Context context, String url){
         if(retrofit == null) {
 
             List<Interceptor> interceptors = new ArrayList<>();
-            //interceptors.add(getHttpLoggingInterceptor());
-            interceptors.add(getHeaderAuthorizationInterceptor());
+            //interceptors.add(InterceptorFactory.getHttpLoggingInterceptor());
+            interceptors.add(InterceptorFactory.getHeaderAuthorizationInterceptor(context));
 
             retrofit = new Retrofit.Builder()
                     .baseUrl(url)
@@ -39,29 +43,5 @@ public class RetrofitClient {
         return retrofit;
     }
 
-    private static Interceptor getHttpLoggingInterceptor() {
-        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
-        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        return loggingInterceptor;
-    }
 
-    private static Interceptor getHeaderAuthorizationInterceptor() {
-        return new Interceptor() {
-                @Override
-                public okhttp3.Response intercept(Chain chain) throws IOException {
-
-                    okhttp3.Request request = chain.request();
-
-                    String authenticationToken = SessionManager.getAuthenticationToken();
-                    if (authenticationToken != null) {
-
-                        Headers headers =
-                                request.headers().newBuilder().add(Constants.AUTHORIZATION_HEADER,
-                                                                   authenticationToken).build();
-                        request = request.newBuilder().headers(headers).build();
-                    }
-                    return chain.proceed(request);
-                }
-            };
-    }
 }

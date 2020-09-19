@@ -1,28 +1,27 @@
 package com.bookaroom.utils;
 
+import android.app.Activity;
+import android.content.Context;
+import android.content.SharedPreferences;
+
 public class SessionManager {
-    private static String authenticationToken;
+    private static final String SESSION_PREFERENCES_NAME = "sessionPreferences";
+    private static final String AUTHENTICATION_TOKEN_KEY = "authenticationToken";
 
-    public static void setAuthenticationToken(String authenticationToken) {
-        SessionManager.authenticationToken = authenticationToken;
-        storeAuthenticationToken(authenticationToken);
+    public static void setAuthenticationToken(Activity activity, String authenticationToken) {
+        SharedPreferences.Editor spEditor = getSharedPreferences(activity).edit();
+        spEditor.putString(AUTHENTICATION_TOKEN_KEY, authenticationToken);
+        spEditor.commit();
     }
 
-    private static void storeAuthenticationToken(String authenticationToken) {
-        // TODO
+    public static String getAuthenticationToken(Context context) {
+        SharedPreferences sp = getSharedPreferences(context);
+        return sp.getString(AUTHENTICATION_TOKEN_KEY, null);
     }
 
-    public static String getAuthenticationToken() {
-        if (authenticationToken == null) {
-            authenticationToken = getStoredAuthenticationToken();
-        }
-
-        return authenticationToken;
+    private static SharedPreferences getSharedPreferences(Context context) {
+        return context.getSharedPreferences(SESSION_PREFERENCES_NAME, Context.MODE_PRIVATE);
     }
 
-    private static String getStoredAuthenticationToken() {
-        // TODO
-        return null;
-    }
 
 }

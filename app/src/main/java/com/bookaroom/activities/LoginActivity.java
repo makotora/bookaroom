@@ -32,7 +32,7 @@ public class LoginActivity extends AppCompatActivity {
 
         edtUsername = (EditText) findViewById(R.id.edtUsername);
         edtPassword = (EditText) findViewById(R.id.edtPassword);
-        userService = ApiUtils.getUserService();
+        userService = ApiUtils.getUserService(this);
 
         findViewById(R.id.btnLogin).setOnClickListener((view) -> {
             login();
@@ -68,7 +68,7 @@ public class LoginActivity extends AppCompatActivity {
                     Toast.makeText(LoginActivity.this, R.string.login_success, Toast.LENGTH_SHORT).show();
                     String authenticationToken =
                             response.headers().get(Constants.AUTHORIZATION_HEADER);
-                    SessionManager.setAuthenticationToken(authenticationToken);
+                    SessionManager.setAuthenticationToken(LoginActivity.this, authenticationToken);
 
                     NavigationUtils.startHomeActivity(LoginActivity.this);
                 }
