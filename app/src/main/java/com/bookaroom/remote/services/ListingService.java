@@ -2,6 +2,7 @@ package com.bookaroom.remote.services;
 
 import com.bookaroom.models.ActionResponse;
 import com.bookaroom.models.ListingResponse;
+import com.bookaroom.models.ListingShortViewResponse;
 
 import java.util.List;
 
@@ -66,4 +67,7 @@ public interface ListingService {
 
     @DELETE(ENDPOINT_PATH + "/deleteByCurrentUser")
     Call<ActionResponse> deleteByCurrentUser();
+
+    @GET(ENDPOINT_PATH + "/getUserRecommendedListings")
+    Call<ListingShortViewResponse> getUserRecommendedListings();
 }

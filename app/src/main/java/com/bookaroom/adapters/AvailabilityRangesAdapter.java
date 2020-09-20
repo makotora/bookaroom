@@ -13,11 +13,9 @@ import android.widget.ListAdapter;
 
 import com.bookaroom.R;
 import com.bookaroom.adapters.data.AvailabilityRange;
+import com.bookaroom.utils.DateUtils;
 import com.bookaroom.utils.listeners.DatePickOnClickListener;
-import com.bookaroom.utils.Utils;
 
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 
 public class AvailabilityRangesAdapter extends ArrayAdapter<AvailabilityRange> implements ListAdapter {
@@ -61,8 +59,8 @@ public class AvailabilityRangesAdapter extends ArrayAdapter<AvailabilityRange> i
 
         setupFromToDatePickers(availabilityRange, edtFrom, edtTo);
 
-        edtFrom.setText(getDateString(availabilityRange.getFrom()));
-        edtTo.setText(getDateString(availabilityRange.getTo()));
+        edtFrom.setText(DateUtils.getDateString(availabilityRange.getFrom()));
+        edtTo.setText(DateUtils.getDateString(availabilityRange.getTo()));
 
         setupSelfRemoveButton(view, position);
 
@@ -73,7 +71,7 @@ public class AvailabilityRangesAdapter extends ArrayAdapter<AvailabilityRange> i
         edtFrom.setOnClickListener(new DatePickOnClickListener(getContext(), new DatePickerDialog.OnDateSetListener() {
             @Override
             public void onDateSet(DatePicker datePicker, int year, int month, int day) {
-                availabilityRange.setFrom(getDate(day, month + 1, year));
+                availabilityRange.setFrom(DateUtils.getDate(day, month + 1, year));
                 notifyDataSetChanged();
             }
         }));
@@ -81,7 +79,7 @@ public class AvailabilityRangesAdapter extends ArrayAdapter<AvailabilityRange> i
         edtTo.setOnClickListener(new DatePickOnClickListener(getContext(), new DatePickerDialog.OnDateSetListener() {
             @Override
             public void onDateSet(DatePicker datePicker, int year, int month, int day) {
-                availabilityRange.setTo(getDate(day, month + 1, year));
+                availabilityRange.setTo(DateUtils.getDate(day, month + 1, year));
                 notifyDataSetChanged();
             }
         }));
@@ -109,29 +107,6 @@ public class AvailabilityRangesAdapter extends ArrayAdapter<AvailabilityRange> i
     @Override
     public void remove(AvailabilityRange availabilityRange) {
         availabilityRanges.remove(availabilityRange);
-    }
-
-
-    private Date getDate(int day, int month, int year) {
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.DAY_OF_MONTH, day);
-        cal.set(Calendar.MONTH, month - 1);
-        cal.set(Calendar.YEAR, year);
-
-        return cal.getTime();
-    }
-
-    private String getDateString(Date date) {
-        if (date == null) return "";
-
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(date);
-
-        return padDateDigit(String.valueOf(cal.get(Calendar.DAY_OF_MONTH))) + "/" + padDateDigit(String.valueOf(cal.get(Calendar.MONTH) + 1)) + "/" + String.valueOf(cal.get(Calendar.YEAR));
-    }
-
-    private String padDateDigit(String digitString) {
-        return Utils.padStringLeft(digitString, '0', 2);
     }
 
 }

@@ -68,4 +68,14 @@
     <string name="host_missing_main_picture">Please pick a main picture for your listing</string>
     <string name="error_http_failure">Request failed</string>
     <string name="loading_error">Error loading resource</string>
+    <string name="search_address">Address:</string>
+    <string name="search_check_in">Check in:</string>
+    <string name="search_check_out">Check out:</string>
+    <string name="search_number_of_guests">Number of guests:</string>
+    <string name="search_listings">Search</string>
+    <string name="search_error_address">Please enter an address</string>
+    <string name="search_error_check_in">Please enter a check in date</string>
+    <string name="search_error_check_out">Please enter a check out date</string>
+    <string name="search_error_number_of_guests">Please enter number of guests</string>
+    <string name="search_error_invalid_dates">Check out date must be after the check in date</string>
 </resources>
