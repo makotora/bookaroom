@@ -7,9 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.PictureDrawable;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -70,7 +68,6 @@ import com.squareup.picasso.Target;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -949,8 +946,7 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
         // Clear additional images
-        additionalImagesBitmaps.clear();
-        additionalImagesAdapter.notifyDataSetChanged();
+        clearAdditionalImagesSynchronized();
 
         if (additionalPicturesPaths != null) {
             additionalImageLoadTargets.clear();
@@ -1002,6 +998,11 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
         hasLivingRoomCheckBox.setChecked(hasLivingRoom == null ? false : hasLivingRoom.booleanValue());
         areaEdtText.setText(Utils.getIntegerStringOrDefault(area,
                                                             ""));
+    }
+
+    private synchronized void clearAdditionalImagesSynchronized() {
+        additionalImagesBitmaps.clear();
+        additionalImagesAdapter.notifyDataSetChanged();
     }
 
     private synchronized void addAdditionalImageBitmapSynchronized(Bitmap bitmap) {

@@ -69,5 +69,5 @@ public interface ListingService {
     Call<ActionResponse> deleteByCurrentUser();
 
     @GET(ENDPOINT_PATH + "/getUserRecommendedListings")
-    Call<ListingShortViewResponse> getUserRecommendedListings();
+    Call<List<ListingShortViewResponse>> getUserRecommendedListings();
 }

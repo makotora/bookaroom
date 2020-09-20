@@ -11,20 +11,25 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.bookaroom.R;
+import com.bookaroom.adapters.ListingShortViewsAdapter;
 import com.bookaroom.exceptions.InvalidInputException;
 import com.bookaroom.models.ListingSearchRequest;
+import com.bookaroom.models.ListingShortViewResponse;
 import com.bookaroom.remote.ApiUtils;
 import com.bookaroom.remote.services.ListingService;
 import com.bookaroom.utils.DateUtils;
-import com.bookaroom.utils.RequestUtils;
 import com.bookaroom.utils.Utils;
 import com.bookaroom.utils.listeners.DatePickOnClickListener;
 import com.bookaroom.utils.navigation.NavigationUtils;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -33,15 +38,19 @@ import retrofit2.Response;
 
 public class HomeActivity extends AppCompatActivity {
     // Search Form
-    LinearLayout searchLayout;
-    EditText edtAddress;
-    EditText edtCheckIn;
-    EditText edtCheckOut;
-    EditText edtNumberOfGuests;
-    Button searchButton;
+    private LinearLayout searchLayout;
+    private EditText edtAddress;
+    private EditText edtCheckIn;
+    private EditText edtCheckOut;
+    private EditText edtNumberOfGuests;
+    private Button searchButton;
     boolean searchHidden;
 
-    ListingService listingService;
+    private ListingService listingService;
+
+    private RecyclerView listingShortViewsRecyclerView;
+    private ListingShortViewsAdapter listingShortViewsAdapter;
+    private List<ListingShortViewResponse> allListingShortViews;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,7 +73,8 @@ public class HomeActivity extends AppCompatActivity {
         edtCheckOut = findViewById(R.id.search_edt_check_out);
         edtNumberOfGuests = findViewById(R.id.search_edt_number_of_guests);
 
-        setupDatePickers(edtCheckIn, edtCheckOut);
+        setupDatePickers(edtCheckIn,
+                         edtCheckOut);
 
         searchButton = findViewById(R.id.search_button);
         searchButton.setOnClickListener(new View.OnClickListener() {
@@ -75,21 +85,36 @@ public class HomeActivity extends AppCompatActivity {
         });
     }
 
-    private void setupDatePickers(EditText edtCheckIn, EditText edtCheckOut) {
+    private void setupDatePickers(
+            EditText edtCheckIn,
+            EditText edtCheckOut) {
         edtCheckIn.setOnClickListener(new DatePickOnClickListener(HomeActivity.this,
-                                                               new DatePickerDialog.OnDateSetListener() {
-            @Override
-            public void onDateSet(DatePicker datePicker, int year, int month, int day) {
-                edtCheckIn.setText(DateUtils.getDateString(day, month + 1, year));
-            }
-        }));
+                                                                  new DatePickerDialog.OnDateSetListener() {
+                                                                      @Override
+                                                                      public void onDateSet(
+                                                                              DatePicker datePicker,
+                                                                              int year,
+                                                                              int month,
+                                                                              int day) {
+                                                                          edtCheckIn.setText(DateUtils.getDateString(day,
+                                                                                                                     month + 1,
+                                                                                                                     year));
+                                                                      }
+                                                                  }));
 
-        edtCheckOut.setOnClickListener(new DatePickOnClickListener(HomeActivity.this, new DatePickerDialog.OnDateSetListener() {
-            @Override
-            public void onDateSet(DatePicker datePicker, int year, int month, int day) {
-                edtCheckOut.setText(DateUtils.getDateString(day, month + 1, year));
-            }
-        }));
+        edtCheckOut.setOnClickListener(new DatePickOnClickListener(HomeActivity.this,
+                                                                   new DatePickerDialog.OnDateSetListener() {
+                                                                       @Override
+                                                                       public void onDateSet(
+                                                                               DatePicker datePicker,
+                                                                               int year,
+                                                                               int month,
+                                                                               int day) {
+                                                                           edtCheckOut.setText(DateUtils.getDateString(day,
+                                                                                                                       month + 1,
+                                                                                                                       year));
+                                                                       }
+                                                                   }));
     }
 
     private void onSearchClick() {
@@ -151,11 +176,15 @@ public class HomeActivity extends AppCompatActivity {
             throw new InvalidInputException(R.string.search_error_number_of_guests);
         }
 
-        return new ListingSearchRequest(address, checkInDate, checkOutDate, numberOfGuests);
+        return new ListingSearchRequest(address,
+                                        checkInDate,
+                                        checkOutDate,
+                                        numberOfGuests);
     }
 
     private void displayInvalidInputMessage(int strResource) {
-        Utils.displayInvalidInputMessage(this, strResource);
+        Utils.displayInvalidInputMessage(this,
+                                         strResource);
     }
 
     public void hideSearchForm() {
@@ -181,21 +210,44 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void initializeResultsView() {
+        allListingShortViews = new ArrayList<>();
+
+        // The Adapter has keeps his own list of 'visible' listing short views
+        listingShortViewsAdapter = new ListingShortViewsAdapter(this,
+                                                                R.layout.listing_short_view,
+                                                                new ArrayList<>());
+
+        listingShortViewsRecyclerView = findViewById(R.id.listing_short_views_layout);
+        listingShortViewsRecyclerView.setLayoutManager(new LinearLayoutManager(this,
+                                                                               LinearLayoutManager.VERTICAL,
+                                                                               false));
+        listingShortViewsRecyclerView.setAdapter(listingShortViewsAdapter);
+
         Call call = listingService.getUserRecommendedListings();
-        call.enqueue(new Callback() {
+        call.enqueue(new Callback<List<ListingShortViewResponse>>() {
             @Override
             public void onResponse(
-                    Call call,
-                    Response response) {
-
+                    Call<List<ListingShortViewResponse>> call,
+                    Response<List<ListingShortViewResponse>> response) {
+                List<ListingShortViewResponse> listingShortViewsResult = response.body();
+                handleListingShortViewsResult(listingShortViewsResult);
             }
 
             @Override
             public void onFailure(
-                    Call call,
+                    Call<List<ListingShortViewResponse>> call,
                     Throwable t) {
-
+                Utils.makeLoadErrorToast(HomeActivity.this);
             }
         });
     }
+
+    private void handleListingShortViewsResult(List<ListingShortViewResponse> listingShortViewsResult) {
+        allListingShortViews = listingShortViewsResult == null ? new ArrayList<>() :
+                listingShortViewsResult;
+        // TODO add only 10 views and handle the rest during scroll
+
+        listingShortViewsAdapter.replaceListingShortViewsWith(allListingShortViews);
+    }
+
 }
