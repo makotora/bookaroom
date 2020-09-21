@@ -7,6 +7,7 @@ import android.view.MenuItem;
 import com.bookaroom.R;
 import com.bookaroom.activities.HomeActivity;
 import com.bookaroom.activities.HostActivity;
+import com.bookaroom.activities.LoginActivity;
 import com.bookaroom.activities.RegisterActivity;
 import com.bookaroom.utils.Utils;
 import com.bookaroom.utils.navigation.ActivityNavigationInfo;
@@ -66,6 +67,11 @@ public class NavigationUtils {
     public static void startRegisterActivity(Activity currentActivity) {
         Intent registerIntent = new Intent(currentActivity, RegisterActivity.class);
         currentActivity.startActivity(registerIntent);
+    }
+
+    public static void startLoginActivity(Activity currentActivity) {
+        Intent homeIntent = new Intent(currentActivity, LoginActivity.class);
+        currentActivity.startActivity(homeIntent);
     }
 
     public static void startHomeActivity(Activity currentActivity) {

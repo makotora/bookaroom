@@ -25,7 +25,9 @@ import com.bookaroom.remote.ApiUtils;
 import com.bookaroom.remote.services.UserService;
 import com.bookaroom.utils.Constants;
 import com.bookaroom.utils.RequestUtils;
+import com.bookaroom.utils.ResponseUtils;
 import com.bookaroom.utils.Utils;
+import com.bookaroom.utils.navigation.NavigationUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -70,13 +72,15 @@ public class RegisterActivity extends Activity {
         edtUsername = (EditText) findViewById(R.id.edtUsername);
         edtPassword = (EditText) findViewById(R.id.edtPassword);
         edtConfirmPassword = (EditText) findViewById(R.id.edtPasswordConfirm);
-        edtName  = (EditText) findViewById(R.id.edtName);
+        edtName = (EditText) findViewById(R.id.edtName);
         edtSurname = (EditText) findViewById(R.id.edtSurname);
         edtEmail = (EditText) findViewById(R.id.edtEmail);
         edtPhone = (EditText) findViewById(R.id.edtPhone);
 
         roleSpinner = (Spinner) findViewById(R.id.spinnerRole);
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, UserRole.names());
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
+                                                                android.R.layout.simple_spinner_item,
+                                                                UserRole.names());
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         roleSpinner.setAdapter(adapter);
 
@@ -89,7 +93,8 @@ public class RegisterActivity extends Activity {
     }
 
     private void onSelectImageClick() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this,
+                                               Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(
                     this,
                     Constants.READ_STORAGE_PERMISSIONS_ARRAY,
@@ -110,60 +115,106 @@ public class RegisterActivity extends Activity {
         String phone = Utils.getEditTextString(edtPhone);
         UserRole userRole = UserRole.valueOf(roleSpinner.getSelectedItem().toString());
 
-        if (!validateInput(username, password1, password2, name, surname, email, phone, userRole)) {
+        if (!validateInput(username,
+                           password1,
+                           password2,
+                           name,
+                           surname,
+                           email,
+                           phone,
+                           userRole)) {
             return;
         }
 
         File userPicture = new File(selectedImagePath);
 
-        register(username, password1, name, surname, email, phone, userRole, userPicture);
+        register(username,
+                 password1,
+                 name,
+                 surname,
+                 email,
+                 phone,
+                 userRole,
+                 userPicture);
     }
 
-    private boolean validateInput(String username, String password1, String password2, String name, String surname, String email, String phone, UserRole userROle) {
+    private boolean validateInput(
+            String username,
+            String password1,
+            String password2,
+            String name,
+            String surname,
+            String email,
+            String phone,
+            UserRole userRole) {
         if (Utils.isNullOrEmpty(username)) {
-            Toast.makeText(RegisterActivity.this, R.string.register_empty_username, Toast.LENGTH_SHORT).show();
+            Toast.makeText(RegisterActivity.this,
+                           R.string.register_empty_username,
+                           Toast.LENGTH_SHORT).show();
             return false;
         }
 
         if (Utils.isNullOrEmpty(password1) && Utils.isNullOrEmpty(password2)) {
-            Toast.makeText(RegisterActivity.this, R.string.register_empty_passwords, Toast.LENGTH_SHORT).show();
+            Toast.makeText(RegisterActivity.this,
+                           R.string.register_empty_passwords,
+                           Toast.LENGTH_SHORT).show();
             return false;
         }
 
         if (!password1.equals(password2)) {
-            Toast.makeText(RegisterActivity.this, R.string.register_passwords_dont_match, Toast.LENGTH_SHORT).show();
+            Toast.makeText(RegisterActivity.this,
+                           R.string.register_passwords_dont_match,
+                           Toast.LENGTH_SHORT).show();
             return false;
         }
 
         if (Utils.isNullOrEmpty(name)) {
-            Toast.makeText(RegisterActivity.this, R.string.register_empty_name, Toast.LENGTH_SHORT).show();
+            Toast.makeText(RegisterActivity.this,
+                           R.string.register_empty_name,
+                           Toast.LENGTH_SHORT).show();
             return false;
         }
 
         if (Utils.isNullOrEmpty(surname)) {
-            Toast.makeText(RegisterActivity.this, R.string.register_empty_surname, Toast.LENGTH_SHORT).show();
+            Toast.makeText(RegisterActivity.this,
+                           R.string.register_empty_surname,
+                           Toast.LENGTH_SHORT).show();
             return false;
         }
 
         if (Utils.isNullOrEmpty(email)) {
-            Toast.makeText(RegisterActivity.this, R.string.register_empty_email, Toast.LENGTH_SHORT).show();
+            Toast.makeText(RegisterActivity.this,
+                           R.string.register_empty_email,
+                           Toast.LENGTH_SHORT).show();
             return false;
         }
 
         if (Utils.isNullOrEmpty(phone)) {
-            Toast.makeText(RegisterActivity.this, R.string.register_empty_phone, Toast.LENGTH_SHORT).show();
+            Toast.makeText(RegisterActivity.this,
+                           R.string.register_empty_phone,
+                           Toast.LENGTH_SHORT).show();
             return false;
         }
 
         if (!selectedImage) {
-            Toast.makeText(RegisterActivity.this, R.string.register_empty_image, Toast.LENGTH_SHORT).show();
+            Toast.makeText(RegisterActivity.this,
+                           R.string.register_empty_image,
+                           Toast.LENGTH_SHORT).show();
             return false;
         }
 
         return true;
     }
 
-    private void register(String username, String password, String name, String surname, String email, String phone, UserRole userRole, File userPicture) {
+    private void register(
+            String username,
+            String password,
+            String name,
+            String surname,
+            String email,
+            String phone,
+            UserRole userRole,
+            File userPicture) {
 
         Call call = userService.register(
                 RequestUtils.getRequestBodyForString(username),
@@ -173,27 +224,28 @@ public class RegisterActivity extends Activity {
                 RequestUtils.getRequestBodyForString(email),
                 RequestUtils.getRequestBodyForString(phone),
                 RequestUtils.getRequestBodyForString(userRole.name()),
-                RequestUtils.getMultipartBodyPartForFile(userPicture, UserService.REGISTER_PART_USER_IMAGE)
-                );
+                RequestUtils.getMultipartBodyPartForFile(userPicture,
+                                                         UserService.REGISTER_PART_USER_IMAGE)
+        );
         call.enqueue(new Callback<ActionResponse>() {
             @Override
-            public void onResponse(Call<ActionResponse> call, Response<ActionResponse> response) {
-                if (response.isSuccessful()) {
-                    ActionResponse actionResponse = response.body();
-
-                    if (!actionResponse.isSuccess()) {
-                        Toast.makeText(RegisterActivity.this, actionResponse.getMessage(), Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                }
-                else {
-                    Utils.makeInternalErrorToast(RegisterActivity.this);
-                }
+            public void onResponse(
+                    Call<ActionResponse> call,
+                    Response<ActionResponse> response) {
+                ResponseUtils.handleActionResponse(RegisterActivity.this,
+                                                   response,
+                                                   (actionResponse) -> NavigationUtils.startLoginActivity(RegisterActivity.this),
+                                                   (actionResponse -> {
+                                                   }));
             }
 
             @Override
-            public void onFailure(Call call, Throwable t) {
-                Toast.makeText(RegisterActivity.this, t.getMessage(), Toast.LENGTH_SHORT).show();
+            public void onFailure(
+                    Call call,
+                    Throwable t) {
+                Toast.makeText(RegisterActivity.this,
+                               t.getMessage(),
+                               Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -202,25 +254,36 @@ public class RegisterActivity extends Activity {
         Intent getIntent = new Intent(Intent.ACTION_GET_CONTENT);
         setPickImageIntentParameters(getIntent);
 
-        Intent pickIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
+        Intent pickIntent = new Intent(Intent.ACTION_PICK,
+                                       MediaStore.Images.Media.INTERNAL_CONTENT_URI);
         setPickImageIntentParameters(pickIntent);
 
-        Intent chooserIntent = Intent.createChooser(getIntent, selectImageMessage);
-        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[] {pickIntent});
+        Intent chooserIntent = Intent.createChooser(getIntent,
+                                                    selectImageMessage);
+        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS,
+                               new Intent[]{pickIntent});
 
-        startActivityForResult(chooserIntent, Constants.PICK_IMAGE_REQUEST_CODE);
+        startActivityForResult(chooserIntent,
+                               Constants.PICK_IMAGE_REQUEST_CODE);
     }
 
     private void setPickImageIntentParameters(Intent intent) {
         intent.setType(Constants.INTENT_TYPE_IMAGE);
-        intent.putExtra("crop", true);
-        intent.putExtra("scale", true);
-        intent.putExtra("aspectX", 16);
-        intent.putExtra("aspectY", 9);
+        intent.putExtra("crop",
+                        true);
+        intent.putExtra("scale",
+                        true);
+        intent.putExtra("aspectX",
+                        16);
+        intent.putExtra("aspectY",
+                        9);
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    public void onActivityResult(
+            int requestCode,
+            int resultCode,
+            Intent data) {
         if (resultCode != Activity.RESULT_OK) {
             return;
         }
@@ -244,7 +307,8 @@ public class RegisterActivity extends Activity {
 
         Bitmap selectedImageBitmap = null;
         try {
-            selectedImageBitmap = MediaStore.Images.Media.getBitmap(getApplicationContext().getContentResolver(), data.getData());
+            selectedImageBitmap = MediaStore.Images.Media.getBitmap(getApplicationContext().getContentResolver(),
+                                                                    data.getData());
         } catch (IOException e) {
             e.printStackTrace();
             Utils.makeInternalErrorToast(this);
@@ -253,7 +317,10 @@ public class RegisterActivity extends Activity {
 
         String[] filePathColumn = {MediaStore.Images.Media.DATA};
         Cursor cursor = getContentResolver().query(selectedImageUri,
-                filePathColumn, null, null, null);
+                                                   filePathColumn,
+                                                   null,
+                                                   null,
+                                                   null);
         cursor.moveToFirst();
 
         int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
