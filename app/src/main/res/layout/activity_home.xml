@@ -79,7 +79,8 @@
                 android:id="@+id/search_button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/search_listings"/>
+                android:text="@string/search_listings"
+                android:src="@drawable/search_icon"/>
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView

@@ -9,6 +9,7 @@ import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -21,6 +22,7 @@ import com.bookaroom.models.ListingSearchRequest;
 import com.bookaroom.models.ListingShortViewResponse;
 import com.bookaroom.remote.ApiUtils;
 import com.bookaroom.remote.services.ListingService;
+import com.bookaroom.utils.Constants;
 import com.bookaroom.utils.DateUtils;
 import com.bookaroom.utils.Utils;
 import com.bookaroom.utils.listeners.DatePickOnClickListener;
@@ -44,13 +46,15 @@ public class HomeActivity extends AppCompatActivity {
     private EditText edtCheckOut;
     private EditText edtNumberOfGuests;
     private Button searchButton;
+
+    private RecyclerView listingShortViewsRecyclerView;
+
+    private ListingShortViewsAdapter listingShortViewsAdapter;
+    private List<ListingShortViewResponse> allListingShortViews;
+
     boolean searchHidden;
 
     private ListingService listingService;
-
-    private RecyclerView listingShortViewsRecyclerView;
-    private ListingShortViewsAdapter listingShortViewsAdapter;
-    private List<ListingShortViewResponse> allListingShortViews;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,11 +67,17 @@ public class HomeActivity extends AppCompatActivity {
 
         initializeSearchForm();
         initializeResultsView();
+
+        if (Constants.INITIALIZE_FORMS_WITH_TEST_DATA) {
+            setDummyData();
+        }
     }
 
     private void initializeSearchForm() {
         searchHidden = false;
+
         searchLayout = findViewById(R.id.search_layout);
+
         edtAddress = findViewById(R.id.search_edt_address);
         edtCheckIn = findViewById(R.id.search_edt_check_in);
         edtCheckOut = findViewById(R.id.search_edt_check_out);
@@ -77,12 +87,8 @@ public class HomeActivity extends AppCompatActivity {
                          edtCheckOut);
 
         searchButton = findViewById(R.id.search_button);
-        searchButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                onSearchClick();
-            }
-        });
+
+        setSearchButtonOnClickListener();
     }
 
     private void setupDatePickers(
@@ -117,7 +123,25 @@ public class HomeActivity extends AppCompatActivity {
                                                                    }));
     }
 
+    private void setSearchButtonOnClickListener() {
+        searchButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onSearchClick();
+            }
+        });
+    }
+
     private void onSearchClick() {
+        if (!searchHidden) {
+            validateFormAndDoSearch();
+        }
+        else {
+            showSearchForm();
+        }
+    }
+
+    private void validateFormAndDoSearch() {
         ListingSearchRequest searchRequest;
 
         try {
@@ -127,8 +151,34 @@ public class HomeActivity extends AppCompatActivity {
             return;
         }
 
+        clearListingResults();
         searchListings(searchRequest);
         hideSearchForm();
+    }
+
+    public void hideSearchForm() {
+        int translationY = 0 - searchLayout.getHeight() + searchButton.getHeight();
+
+        searchLayout.setVisibility(View.VISIBLE);
+        searchLayout.setAlpha(0.0f);
+
+        searchLayout.animate()
+                .translationY(translationY)
+                .alpha(1.0f)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+                        searchLayout.setVisibility(View.VISIBLE);
+                    }
+                });
+
+        listingShortViewsRecyclerView.animate()
+                .translationY(translationY)
+                .alpha(1.0f)
+                .setListener(null);
+
+        searchHidden = true;
     }
 
     private ListingSearchRequest getListingSearchRequestIfValid() throws InvalidInputException {
@@ -187,26 +237,39 @@ public class HomeActivity extends AppCompatActivity {
                                          strResource);
     }
 
-    public void hideSearchForm() {
-        searchLayout.setVisibility(View.VISIBLE);
-        searchLayout.setAlpha(0.0f);
-
-        searchLayout.animate()
-                .translationY(0 - searchLayout.getHeight())
-                .alpha(0.0f)
-                .setListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        super.onAnimationEnd(animation);
-//                                    view.setVisibility(View.GONE);
-                    }
-                });
-        searchHidden = true;
+    private void clearListingResults() {
+        listingShortViewsAdapter.clearListingShortViews();
     }
 
     private void searchListings(ListingSearchRequest searchRequest) {
+        List<ListingShortViewResponse> searchResults = doSearch(searchRequest);
+        if (searchResults == null || searchResults.isEmpty()) {
+            Toast.makeText(this, R.string.search_no_results, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        handleListingShortViewsResult(searchResults);
+    }
+
+    private List<ListingShortViewResponse> doSearch(ListingSearchRequest searchRequest) {
         // TODO
-        return;
+        return new ArrayList<>();
+    }
+
+    private void showSearchForm() {
+        int translationY = 0;
+
+        searchLayout.animate()
+                .translationY(translationY)
+                .alpha(1.0f)
+                .setListener(null);
+
+        listingShortViewsRecyclerView.animate()
+                .translationY(translationY)
+                .alpha(1.0f)
+                .setListener(null);
+
+        searchHidden = false;
     }
 
     private void initializeResultsView() {
@@ -223,6 +286,10 @@ public class HomeActivity extends AppCompatActivity {
                                                                                false));
         listingShortViewsRecyclerView.setAdapter(listingShortViewsAdapter);
 
+        displayUserRecommendedListings();
+    }
+
+    private void displayUserRecommendedListings() {
         Call call = listingService.getUserRecommendedListings();
         call.enqueue(new Callback<List<ListingShortViewResponse>>() {
             @Override
@@ -250,4 +317,10 @@ public class HomeActivity extends AppCompatActivity {
         listingShortViewsAdapter.replaceListingShortViewsWith(allListingShortViews);
     }
 
+    private void setDummyData() {
+        edtAddress.setText("SPITI MOU");
+        edtCheckIn.setText("26/06/1996");
+        edtCheckOut.setText("06/08/1996");
+        edtNumberOfGuests.setText("15");
+    }
 }

@@ -78,4 +78,5 @@
     <string name="search_error_check_out">Please enter a check out date</string>
     <string name="search_error_number_of_guests">Please enter number of guests</string>
     <string name="search_error_invalid_dates">Check out date must be after the check in date</string>
+    <string name="search_no_results">No search results available</string>
 </resources>
