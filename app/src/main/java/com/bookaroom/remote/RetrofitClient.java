@@ -3,6 +3,7 @@ package com.bookaroom.remote;
 import android.content.Context;
 
 import com.bookaroom.remote.client.SelfSignCertHttpClient;
+import com.bookaroom.remote.converters.QueryConverterFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +28,7 @@ public class RetrofitClient {
             retrofit = new Retrofit.Builder()
                     .baseUrl(url)
                     .addConverterFactory(GsonConverterFactory.create())
+                    .addConverterFactory(QueryConverterFactory.create())
                     .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                     .client(SelfSignCertHttpClient.getSelfSignOkHttpClient(interceptors))
                     .build();

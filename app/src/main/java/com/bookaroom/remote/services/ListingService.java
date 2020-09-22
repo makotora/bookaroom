@@ -4,6 +4,7 @@ import com.bookaroom.models.ActionResponse;
 import com.bookaroom.models.ListingResponse;
 import com.bookaroom.models.ListingShortViewResponse;
 
+import java.util.Date;
 import java.util.List;
 
 import okhttp3.MultipartBody;
@@ -14,6 +15,7 @@ import retrofit2.http.GET;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.Part;
+import retrofit2.http.Query;
 
 public interface ListingService {
     public static final String LISTING_MAIN_PICTURE_PARAM_NAME = "mainListingPictureFile";
@@ -70,4 +72,12 @@ public interface ListingService {
 
     @GET(ENDPOINT_PATH + "/getUserRecommendedListings")
     Call<List<ListingShortViewResponse>> getUserRecommendedListings();
+
+    @GET(ENDPOINT_PATH + "/search")
+    Call<List<ListingShortViewResponse>> search(@Query("state") String state,
+                                                @Query("city") String city,
+                                                @Query("country") String country,
+                                                @Query("checkIn") Date checkIn,
+                                                @Query("checkOut") Date checkOut,
+                                                @Query("numberOfGuests") Integer numberOfGuests);
 }

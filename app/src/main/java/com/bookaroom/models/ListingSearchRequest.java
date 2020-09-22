@@ -3,28 +3,50 @@ package com.bookaroom.models;
 import java.util.Date;
 
 public class ListingSearchRequest {
-    private String address;
+    private String state;
+    private String city;
+    private String country;
     private Date checkIn;
     private Date checkOut;
     private Integer numberOfGuests;
 
     public ListingSearchRequest(
-            String address,
+            String state,
+            String city,
+            String country,
             Date checkIn,
             Date checkOut,
             Integer numberOfGuests) {
-        this.address = address;
+        this.state = state;
+        this.city = city;
+        this.country = country;
         this.checkIn = checkIn;
         this.checkOut = checkOut;
         this.numberOfGuests = numberOfGuests;
     }
 
-    public String getAddress() {
-        return address;
+    public String getState() {
+        return state;
     }
 
-    public void setAddress(String address) {
-        this.address = address;
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
     }
 
     public Date getCheckIn() {
@@ -49,5 +71,17 @@ public class ListingSearchRequest {
 
     public void setNumberOfGuests(Integer numberOfGuests) {
         this.numberOfGuests = numberOfGuests;
+    }
+
+    @Override
+    public String toString() {
+        return "ListingSearchRequest{" +
+                "state='" + state + '\'' +
+                ", city='" + city + '\'' +
+                ", country='" + country + '\'' +
+                ", checkIn=" + checkIn +
+                ", checkOut=" + checkOut +
+                ", numberOfGuests=" + numberOfGuests +
+                '}';
     }
 }

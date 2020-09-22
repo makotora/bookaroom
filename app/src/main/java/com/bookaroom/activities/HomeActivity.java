@@ -41,7 +41,9 @@ import retrofit2.Response;
 public class HomeActivity extends AppCompatActivity {
     // Search Form
     private LinearLayout searchLayout;
-    private EditText edtAddress;
+    private EditText edtState;
+    private EditText edtCity;
+    private EditText edtCountry;
     private EditText edtCheckIn;
     private EditText edtCheckOut;
     private EditText edtNumberOfGuests;
@@ -78,7 +80,9 @@ public class HomeActivity extends AppCompatActivity {
 
         searchLayout = findViewById(R.id.search_layout);
 
-        edtAddress = findViewById(R.id.search_edt_address);
+        edtState = findViewById(R.id.search_edt_state);
+        edtCity = findViewById(R.id.search_edt_city);
+        edtCountry = findViewById(R.id.search_edt_country);
         edtCheckIn = findViewById(R.id.search_edt_check_in);
         edtCheckOut = findViewById(R.id.search_edt_check_out);
         edtNumberOfGuests = findViewById(R.id.search_edt_number_of_guests);
@@ -182,9 +186,19 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private ListingSearchRequest getListingSearchRequestIfValid() throws InvalidInputException {
-        String address = Utils.getEditTextString(edtAddress);
-        if (Utils.isNullOrEmpty(address)) {
-            throw new InvalidInputException(R.string.search_error_address);
+        String state = Utils.getEditTextString(edtState);
+        if (Utils.isNullOrEmpty(state)) {
+            throw new InvalidInputException(R.string.search_error_state);
+        }
+
+        String city = Utils.getEditTextString(edtCity);
+        if (Utils.isNullOrEmpty(city)) {
+            throw new InvalidInputException(R.string.search_error_city);
+        }
+
+        String country = Utils.getEditTextString(edtCountry);
+        if (Utils.isNullOrEmpty(country)) {
+            throw new InvalidInputException(R.string.search_error_city);
         }
 
         Date checkInDate;
@@ -226,7 +240,9 @@ public class HomeActivity extends AppCompatActivity {
             throw new InvalidInputException(R.string.search_error_number_of_guests);
         }
 
-        return new ListingSearchRequest(address,
+        return new ListingSearchRequest(state,
+                                        city,
+                                        country,
                                         checkInDate,
                                         checkOutDate,
                                         numberOfGuests);
@@ -242,18 +258,36 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void searchListings(ListingSearchRequest searchRequest) {
-        List<ListingShortViewResponse> searchResults = doSearch(searchRequest);
+        Call searchCall = listingService.search(searchRequest.getState(),
+                                                searchRequest.getCity(),
+                                                searchRequest.getCountry(),
+                                                searchRequest.getCheckIn(),
+                                                searchRequest.getCheckOut(),
+                                                searchRequest.getNumberOfGuests());
+        searchCall.enqueue(new Callback<List<ListingShortViewResponse>>() {
+            @Override
+            public void onResponse(
+                    Call<List<ListingShortViewResponse>> call,
+                    Response<List<ListingShortViewResponse>> response) {
+                handleListingSearchResults(response.body());
+            }
+
+            @Override
+            public void onFailure(
+                    Call<List<ListingShortViewResponse>> call,
+                    Throwable t) {
+                Utils.makeLoadErrorToast(HomeActivity.this);
+            }
+        });
+    }
+
+    private void handleListingSearchResults(List<ListingShortViewResponse> searchResults) {
         if (searchResults == null || searchResults.isEmpty()) {
             Toast.makeText(this, R.string.search_no_results, Toast.LENGTH_SHORT).show();
             return;
         }
 
-        handleListingShortViewsResult(searchResults);
-    }
-
-    private List<ListingShortViewResponse> doSearch(ListingSearchRequest searchRequest) {
-        // TODO
-        return new ArrayList<>();
+        handleListingShortViewsResults(searchResults);
     }
 
     private void showSearchForm() {
@@ -297,7 +331,7 @@ public class HomeActivity extends AppCompatActivity {
                     Call<List<ListingShortViewResponse>> call,
                     Response<List<ListingShortViewResponse>> response) {
                 List<ListingShortViewResponse> listingShortViewsResult = response.body();
-                handleListingShortViewsResult(listingShortViewsResult);
+                handleListingShortViewsResults(listingShortViewsResult);
             }
 
             @Override
@@ -309,7 +343,7 @@ public class HomeActivity extends AppCompatActivity {
         });
     }
 
-    private void handleListingShortViewsResult(List<ListingShortViewResponse> listingShortViewsResult) {
+    private void handleListingShortViewsResults(List<ListingShortViewResponse> listingShortViewsResult) {
         allListingShortViews = listingShortViewsResult == null ? new ArrayList<>() :
                 listingShortViewsResult;
         // TODO add only 10 views and handle the rest during scroll
@@ -318,7 +352,9 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void setDummyData() {
-        edtAddress.setText("SPITI MOU");
+        edtState.setText("Attica");
+        edtCity.setText("Glyfada");
+        edtCountry.setText("Greece");
         edtCheckIn.setText("26/06/1996");
         edtCheckOut.setText("06/08/1996");
         edtNumberOfGuests.setText("15");
