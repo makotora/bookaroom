@@ -37,11 +37,13 @@ import com.bookaroom.adapters.data.AvailabilityRange;
 import com.bookaroom.enums.ListingType;
 import com.bookaroom.exceptions.InvalidInputException;
 import com.bookaroom.models.ActionResponse;
+import com.bookaroom.models.BooleanResponse;
 import com.bookaroom.models.ListingDetails;
 import com.bookaroom.models.ListingResponse;
 import com.bookaroom.remote.ApiUtils;
 import com.bookaroom.remote.PicassoTrustAll;
 import com.bookaroom.remote.services.ListingService;
+import com.bookaroom.remote.services.UserService;
 import com.bookaroom.utils.Constants;
 import com.bookaroom.utils.DateUtils;
 import com.bookaroom.utils.FileUtils;
@@ -107,6 +109,7 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     private EditText areaEdtText;
     //-------------
 
+    UserService userService;
     ListingService listingService;
 
     private Button addressSearchBtn;
@@ -171,10 +174,11 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
 
         overrideScrollOperations();
 
-        initializeDataAndButtonsAndDoAsyncOperations();
+        initializeDataAndButtons();
     }
 
     private void initializeServices() {
+        userService = ApiUtils.getUserService(this);
         listingService = ApiUtils.getListingService(this);
     }
 
@@ -843,39 +847,59 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
         areaEdtText.setText("75");
     }
 
-    private void initializeDataAndButtonsAndDoAsyncOperations() {
+    private void initializeDataAndButtons() {
+        Call<BooleanResponse> hasListingCall = userService.userHasListing();
+        hasListingCall.enqueue(new Callback<BooleanResponse>() {
+            @Override
+            public void onResponse(
+                    Call<BooleanResponse> call,
+                    Response<BooleanResponse> response) {
+                BooleanResponse booleanResponse = response.body();
+                initializeDataAndButtonsInternal(booleanResponse.isFlag());
+            }
+
+            @Override
+            public void onFailure(
+                    Call<BooleanResponse> call,
+                    Throwable t) {
+                t.printStackTrace();
+                Utils.makeInternalErrorToast(HostActivity.this);
+            }
+        });
+
+
+    }
+
+    private void initializeDataAndButtonsInternal(boolean userHasListing) {
+        if (userHasListing) {
+            setDataFromUserListing();
+            initializeDeleteButton();
+        }
+
+        initializeSubmitButton(userHasListing);
+
+        if (!userHasListing && Constants.INITIALIZE_FORMS_WITH_TEST_DATA) {
+            setDummyData();
+        }
+    }
+
+    private void setDataFromUserListing() {
         Call<ListingResponse> call = listingService.getByCurrentUser();
         call.enqueue(new Callback<ListingResponse>() {
             @Override
             public void onResponse(
                     Call<ListingResponse> call,
                     Response<ListingResponse> response) {
-                handleListingResponse(response.body());
+                setExistingData(response.body());
             }
 
             @Override
             public void onFailure(
                     Call<ListingResponse> call,
                     Throwable t) {
-                Utils.makeLoadErrorToast(HostActivity.this);
-                t.printStackTrace();
+                Utils.makeInternalErrorToast(HostActivity.this);
             }
         });
-    }
-
-    private void handleListingResponse(ListingResponse listingResponse) {
-        boolean hostHasListing = listingResponse != null;
-        if (hostHasListing) {
-            setExistingData(listingResponse);
-            initializeDeleteButton();
-        }
-
-        initializeSubmitButton(hostHasListing);
-
-        if (!hostHasListing && Constants.INITIALIZE_FORMS_WITH_TEST_DATA) {
-            setDummyData();
-        }
-
     }
 
     private void setExistingData(ListingResponse listingResponse) {
