@@ -65,6 +65,7 @@
     <string name="host_invalid_number_of_bedrooms">Please enter a valid number of bedrooms</string>
     <string name="host_invalid_listing_area">Please enter a valid area for your listing</string>
     <string name="host_missing_availability_dates">Please enter availability dates for your listing</string>
+    <string name="host_invalid_availability_dates">Availability start date must be before the availability end date</string>
     <string name="host_missing_main_picture">Please pick a main picture for your listing</string>
     <string name="error_http_failure">Request failed</string>
     <string name="loading_error">Error loading resource</string>

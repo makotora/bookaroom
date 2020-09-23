@@ -39,4 +39,13 @@ public class DateUtils {
     public static Date parseDate(String dateString) throws ParseException {
         return new SimpleDateFormat("dd/MM/yyyy").parse(dateString);
     }
+
+    public static Date addDays(Date date, int days)
+    {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        cal.add(Calendar.DAY_OF_MONTH, days);
+
+        return cal.getTime();
+    }
 }

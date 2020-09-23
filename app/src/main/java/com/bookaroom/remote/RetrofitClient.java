@@ -4,6 +4,8 @@ import android.content.Context;
 
 import com.bookaroom.remote.client.SelfSignCertHttpClient;
 import com.bookaroom.remote.converters.QueryConverterFactory;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +29,7 @@ public class RetrofitClient {
 
             retrofit = new Retrofit.Builder()
                     .baseUrl(url)
-                    .addConverterFactory(GsonConverterFactory.create())
+                    .addConverterFactory(GsonConverterFactory.create(getGsonBuilder()))
                     .addConverterFactory(QueryConverterFactory.create())
                     .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                     .client(SelfSignCertHttpClient.getSelfSignOkHttpClient(interceptors))
@@ -35,6 +37,12 @@ public class RetrofitClient {
         }
 
         return retrofit;
+    }
+
+    private static Gson getGsonBuilder() {
+        return new GsonBuilder()
+                .setDateFormat("dd-MM-yyyy")
+                .create();
     }
 
 

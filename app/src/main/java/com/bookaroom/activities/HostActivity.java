@@ -43,6 +43,7 @@ import com.bookaroom.remote.ApiUtils;
 import com.bookaroom.remote.PicassoTrustAll;
 import com.bookaroom.remote.services.ListingService;
 import com.bookaroom.utils.Constants;
+import com.bookaroom.utils.DateUtils;
 import com.bookaroom.utils.FileUtils;
 import com.bookaroom.utils.ImageSelectionUtils;
 import com.bookaroom.utils.ImageUtils;
@@ -300,8 +301,9 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private ArrayList<AvailabilityRange> getInitialAvailabilityRanges() {
-        AvailabilityRange initialAvailabilityRange = new AvailabilityRange(new Date(),
-                                                                           new Date());
+        Date today = new Date();
+        AvailabilityRange initialAvailabilityRange = new AvailabilityRange(today,
+                                                                           DateUtils.addDays(today, 1));
         ArrayList<AvailabilityRange> availabilityRanges = new ArrayList<AvailabilityRange>(1);
         availabilityRanges.add(initialAvailabilityRange);
 
@@ -759,6 +761,10 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
             if (availabilityRange.getFrom() == null || availabilityRange.getTo() == null) {
                 throw new InvalidInputException(R.string.host_missing_availability_dates);
             }
+
+            if (!availabilityRange.getFrom().before(availabilityRange.getTo())) {
+                throw new InvalidInputException(R.string.host_invalid_availability_dates);
+            }
         }
 
         if (!mainPictureSelected) {
@@ -851,12 +857,8 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
             public void onFailure(
                     Call<ListingResponse> call,
                     Throwable t) {
-                initializeSubmitButton(false);
-                initializeListingMap();
-
-                if (Constants.INITIALIZE_FORMS_WITH_TEST_DATA) {
-                    setDummyData();
-                }
+                Utils.makeLoadErrorToast(HostActivity.this);
+                t.printStackTrace();
             }
         });
     }
