@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
@@ -24,6 +25,7 @@ import com.bookaroom.remote.ApiUtils;
 import com.bookaroom.remote.services.ListingService;
 import com.bookaroom.utils.Constants;
 import com.bookaroom.utils.DateUtils;
+import com.bookaroom.utils.LayoutUtils;
 import com.bookaroom.utils.Utils;
 import com.bookaroom.utils.listeners.DatePickOnClickListener;
 import com.bookaroom.utils.navigation.NavigationUtils;
@@ -54,7 +56,9 @@ public class HomeActivity extends AppCompatActivity {
     private ListingShortViewsAdapter listingShortViewsAdapter;
     private List<ListingShortViewResponse> allListingShortViews;
 
-    boolean searchHidden;
+    private int initialSearchLayoutHeight;
+    private static final int hiddenSearchLayoutHeight = 0;
+    private boolean searchHidden;
 
     private ListingService listingService;
 
@@ -139,8 +143,7 @@ public class HomeActivity extends AppCompatActivity {
     private void onSearchClick() {
         if (!searchHidden) {
             validateFormAndDoSearch();
-        }
-        else {
+        } else {
             showSearchForm();
         }
     }
@@ -161,27 +164,17 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     public void hideSearchForm() {
-        int translationY = 0 - searchLayout.getHeight() + searchButton.getHeight();
-
-        searchLayout.setVisibility(View.VISIBLE);
-        searchLayout.setAlpha(0.0f);
-
-        searchLayout.animate()
-                .translationY(translationY)
-                .alpha(1.0f)
-                .setListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        super.onAnimationEnd(animation);
-                        searchLayout.setVisibility(View.VISIBLE);
-                    }
-                });
-
-        listingShortViewsRecyclerView.animate()
-                .translationY(translationY)
-                .alpha(1.0f)
-                .setListener(null);
-
+        initialSearchLayoutHeight = searchLayout.getHeight();
+        LayoutUtils.slideView(searchLayout,
+                              initialSearchLayoutHeight,
+                              hiddenSearchLayoutHeight,
+                              new AnimatorListenerAdapter() {
+                                  @Override
+                                  public void onAnimationEnd(Animator animation) {
+                                      super.onAnimationEnd(animation);
+                                      searchLayout.setVisibility(View.GONE);
+                                  }
+                              });
         searchHidden = true;
     }
 
@@ -283,7 +276,9 @@ public class HomeActivity extends AppCompatActivity {
 
     private void handleListingSearchResults(List<ListingShortViewResponse> searchResults) {
         if (searchResults == null || searchResults.isEmpty()) {
-            Toast.makeText(this, R.string.search_no_results, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this,
+                           R.string.search_no_results,
+                           Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -291,17 +286,11 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void showSearchForm() {
-        int translationY = 0;
-
-        searchLayout.animate()
-                .translationY(translationY)
-                .alpha(1.0f)
-                .setListener(null);
-
-        listingShortViewsRecyclerView.animate()
-                .translationY(translationY)
-                .alpha(1.0f)
-                .setListener(null);
+        searchLayout.setVisibility(View.VISIBLE);
+        LayoutUtils.slideView(searchLayout,
+                              hiddenSearchLayoutHeight,
+                              initialSearchLayoutHeight,
+                              null);
 
         searchHidden = false;
     }
@@ -355,8 +344,8 @@ public class HomeActivity extends AppCompatActivity {
         edtState.setText("Attica");
         edtCity.setText("Glyfada");
         edtCountry.setText("Greece");
-        edtCheckIn.setText("26/06/1996");
-        edtCheckOut.setText("06/08/1996");
-        edtNumberOfGuests.setText("15");
+        edtCheckIn.setText("24/09/2020");
+        edtCheckOut.setText("30/09/2020");
+        edtNumberOfGuests.setText("1");
     }
 }

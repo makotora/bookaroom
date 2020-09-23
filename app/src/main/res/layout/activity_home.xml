@@ -97,22 +97,29 @@
                     android:longClickable="false"/>
             </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/search_number_of_guests" />
-
-            <EditText
-                android:id="@+id/search_edt_number_of_guests"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="number"/>
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/search_number_of_guests" />
+
+                <EditText
+                    android:id="@+id/search_edt_number_of_guests"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"/>
+            </LinearLayout>
+
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/search_button_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/search_layout">
             <Button
                 android:id="@+id/search_button"
                 android:layout_width="match_parent"
@@ -124,8 +131,9 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/listing_short_views_layout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/search_layout"
+            android:layout_height="match_parent"
+            android:layout_below="@+id/search_button_layout"
+            android:layout_above="@+id/bottom_navigation"
             android:scrollbars="vertical"/>
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
