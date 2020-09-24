@@ -65,7 +65,7 @@ public class HomeActivity extends AppCompatActivity {
     private ListingService listingService;
 
     private static final int INITIAL_VISIBLE_RESULTS = 10;
-    private static final int ADDITIONAL_ELEMENTS_PER_LOAD = 5;
+    private static final int ADDITIONAL_ELEMENTS_PER_LOAD = 3;
     private static final int LOAD_DELAY_MS = 2000;
 
     private ReentrantLock loadResultsLock;
@@ -402,8 +402,6 @@ public class HomeActivity extends AppCompatActivity {
         loadResultsLock.lock();
 
         try {
-            LinearLayoutManager linearLayoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-
             if (!isLastElementCompletelyVisible(recyclerView)) {
                 return;
             }
@@ -412,16 +410,19 @@ public class HomeActivity extends AppCompatActivity {
             recyclerView.post(new Runnable() {
                 @Override
                 public void run() {
-                    listingShortViewsAdapter.addItem(listingShortViewsAdapter.getLoadingItem());
-                    List<ListingShortViewResponse> elementsToShow = getNextElementsToShow();
-                    listingShortViewsAdapter.removeLastItem();
+                    try {
+                        final int currentVisibleCount = listingShortViewsAdapter.getItemCount();
+                        listingShortViewsAdapter.addItem(listingShortViewsAdapter.getLoadingItem());
+                        List<ListingShortViewResponse> elementsToShow = getNextElementsToShow(currentVisibleCount);
+                        listingShortViewsAdapter.removeLastItem();
 
-                    listingShortViewsAdapter.addAllListingShortViews(elementsToShow);
-
+                        listingShortViewsAdapter.addAllListingShortViews(elementsToShow);
+                    } finally {
+                        loadResultsLock.unlock();
+                    }
                 }
             });
-        }
-        finally {
+        } catch (Exception e) {
             loadResultsLock.unlock();
         }
     }
@@ -432,8 +433,7 @@ public class HomeActivity extends AppCompatActivity {
         return linearLayoutManager != null && linearLayoutManager.findLastCompletelyVisibleItemPosition() == listingShortViewsAdapter.getItemCount() - 1;
     }
 
-    private List<ListingShortViewResponse> getNextElementsToShow() {
-        final int currentVisibleCount = listingShortViewsAdapter.getItemCount();
+    private List<ListingShortViewResponse> getNextElementsToShow(final int currentVisibleCount) {
         final int targetVisibleCount = currentVisibleCount + ADDITIONAL_ELEMENTS_PER_LOAD;
         final int allElementsCount = allListingShortViews.size();
 
