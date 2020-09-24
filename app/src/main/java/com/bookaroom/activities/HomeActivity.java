@@ -4,14 +4,15 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.app.DatePickerDialog;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -34,6 +35,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -57,10 +59,16 @@ public class HomeActivity extends AppCompatActivity {
     private List<ListingShortViewResponse> allListingShortViews;
 
     private int initialSearchLayoutHeight;
-    private static final int hiddenSearchLayoutHeight = 0;
+    private static final int HIDDEN_SEARCH_LAYOUT_HEIGHT = 0;
     private boolean searchHidden;
 
     private ListingService listingService;
+
+    private static final int INITIAL_VISIBLE_RESULTS = 10;
+    private static final int ADDITIONAL_ELEMENTS_PER_LOAD = 5;
+    private static final int LOAD_DELAY_MS = 2000;
+
+    private ReentrantLock loadResultsLock;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,8 +79,11 @@ public class HomeActivity extends AppCompatActivity {
 
         listingService = ApiUtils.getListingService(this);
 
+        loadResultsLock = new ReentrantLock();
+
         initializeSearchForm();
         initializeResultsView();
+        initializeResultsScrollListener();
 
         if (Constants.INITIALIZE_FORMS_WITH_TEST_DATA) {
             setDummyData();
@@ -158,7 +169,6 @@ public class HomeActivity extends AppCompatActivity {
             return;
         }
 
-        clearListingResults();
         searchListings(searchRequest);
         hideSearchForm();
     }
@@ -167,7 +177,7 @@ public class HomeActivity extends AppCompatActivity {
         initialSearchLayoutHeight = searchLayout.getHeight();
         LayoutUtils.slideView(searchLayout,
                               initialSearchLayoutHeight,
-                              hiddenSearchLayoutHeight,
+                              HIDDEN_SEARCH_LAYOUT_HEIGHT,
                               new AnimatorListenerAdapter() {
                                   @Override
                                   public void onAnimationEnd(Animator animation) {
@@ -246,10 +256,6 @@ public class HomeActivity extends AppCompatActivity {
                                          strResource);
     }
 
-    private void clearListingResults() {
-        listingShortViewsAdapter.clearListingShortViews();
-    }
-
     private void searchListings(ListingSearchRequest searchRequest) {
         Call searchCall = listingService.search(searchRequest.getState(),
                                                 searchRequest.getCity(),
@@ -279,7 +285,6 @@ public class HomeActivity extends AppCompatActivity {
             Toast.makeText(this,
                            R.string.search_no_results,
                            Toast.LENGTH_SHORT).show();
-            return;
         }
 
         handleListingShortViewsResults(searchResults);
@@ -288,7 +293,7 @@ public class HomeActivity extends AppCompatActivity {
     private void showSearchForm() {
         searchLayout.setVisibility(View.VISIBLE);
         LayoutUtils.slideView(searchLayout,
-                              hiddenSearchLayoutHeight,
+                              HIDDEN_SEARCH_LAYOUT_HEIGHT,
                               initialSearchLayoutHeight,
                               null);
 
@@ -301,6 +306,7 @@ public class HomeActivity extends AppCompatActivity {
         // The Adapter has keeps his own list of 'visible' listing short views
         listingShortViewsAdapter = new ListingShortViewsAdapter(this,
                                                                 R.layout.listing_short_view,
+                                                                R.layout.loading_layout,
                                                                 new ArrayList<>());
 
         listingShortViewsRecyclerView = findViewById(R.id.listing_short_views_layout);
@@ -335,9 +341,23 @@ public class HomeActivity extends AppCompatActivity {
     private void handleListingShortViewsResults(List<ListingShortViewResponse> listingShortViewsResult) {
         allListingShortViews = listingShortViewsResult == null ? new ArrayList<>() :
                 listingShortViewsResult;
-        // TODO add only 10 views and handle the rest during scroll
 
-        listingShortViewsAdapter.replaceListingShortViewsWith(allListingShortViews);
+        loadResultsLock.lock();
+
+        try {
+            List<ListingShortViewResponse> initialResults = getInitialResults();
+            listingShortViewsAdapter.replaceListingShortViewsWith(initialResults);
+        } finally {
+            loadResultsLock.unlock();
+        }
+    }
+
+    private List<ListingShortViewResponse> getInitialResults() {
+        List<ListingShortViewResponse> initialResults = new ArrayList<>(INITIAL_VISIBLE_RESULTS);
+        for (int i = 0; i < allListingShortViews.size() && i < INITIAL_VISIBLE_RESULTS; i++) {
+            initialResults.add(allListingShortViews.get(i));
+        }
+        return initialResults;
     }
 
     private void setDummyData() {
@@ -348,4 +368,81 @@ public class HomeActivity extends AppCompatActivity {
         edtCheckOut.setText("30/09/2020");
         edtNumberOfGuests.setText("1");
     }
+
+    private void initializeResultsScrollListener() {
+        listingShortViewsRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(
+                    @NonNull RecyclerView recyclerView,
+                    int newState) {
+                super.onScrollStateChanged(recyclerView,
+                                           newState);
+            }
+
+            @Override
+            public void onScrolled(
+                    @NonNull RecyclerView recyclerView,
+                    int dx,
+                    int dy) {
+                super.onScrolled(recyclerView,
+                                 dx,
+                                 dy);
+                handleResultsScroll(recyclerView,
+                                    dx,
+                                    dy);
+            }
+
+        });
+    }
+
+    private void handleResultsScroll(
+            RecyclerView recyclerView,
+            int dx,
+            int dy) {
+        loadResultsLock.lock();
+
+        try {
+            LinearLayoutManager linearLayoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+
+            if (!isLastElementCompletelyVisible(recyclerView)) {
+                return;
+            }
+
+            // Load more elements
+            recyclerView.post(new Runnable() {
+                @Override
+                public void run() {
+                    listingShortViewsAdapter.addItem(listingShortViewsAdapter.getLoadingItem());
+                    List<ListingShortViewResponse> elementsToShow = getNextElementsToShow();
+                    listingShortViewsAdapter.removeLastItem();
+
+                    listingShortViewsAdapter.addAllListingShortViews(elementsToShow);
+
+                }
+            });
+        }
+        finally {
+            loadResultsLock.unlock();
+        }
+    }
+
+    private boolean isLastElementCompletelyVisible(RecyclerView recyclerView) {
+        LinearLayoutManager linearLayoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+
+        return linearLayoutManager != null && linearLayoutManager.findLastCompletelyVisibleItemPosition() == listingShortViewsAdapter.getItemCount() - 1;
+    }
+
+    private List<ListingShortViewResponse> getNextElementsToShow() {
+        final int currentVisibleCount = listingShortViewsAdapter.getItemCount();
+        final int targetVisibleCount = currentVisibleCount + ADDITIONAL_ELEMENTS_PER_LOAD;
+        final int allElementsCount = allListingShortViews.size();
+
+        List<ListingShortViewResponse> elementsToShow = new ArrayList<>();
+        for (int i = currentVisibleCount; i < allElementsCount && i < targetVisibleCount; i++) {
+            elementsToShow.add(allListingShortViews.get(i));
+        }
+
+        return elementsToShow;
+    }
+
 }
