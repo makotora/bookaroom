@@ -1,5 +1,6 @@
 package com.bookaroom.adapters;
 
+import android.app.Activity;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,13 +16,14 @@ import com.bookaroom.models.ListingShortViewResponse;
 import com.bookaroom.remote.PicassoTrustAll;
 import com.bookaroom.utils.RequestUtils;
 import com.bookaroom.utils.Utils;
+import com.bookaroom.utils.navigation.NavigationUtils;
 import com.squareup.picasso.MemoryPolicy;
 import com.squareup.picasso.NetworkPolicy;
 
 import java.util.List;
 
 public class ListingShortViewsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-    private Context context;
+    private Activity context;
     private int itemLayoutResource;
     private int loadingLayoutResource;
     private List<ListingShortViewResponse> listingShortViews;
@@ -56,7 +58,7 @@ public class ListingShortViewsAdapter extends RecyclerView.Adapter<RecyclerView.
     }
 
     public ListingShortViewsAdapter(
-            Context context,
+            Activity context,
             int itemLayoutResource,
             int loadingLayoutResource,
             List<ListingShortViewResponse> listingShortViews) {
@@ -135,7 +137,7 @@ public class ListingShortViewsAdapter extends RecyclerView.Adapter<RecyclerView.
             @Override
             public void onClick(View v) {
                 Long clickedListingId = clickedListingShortViewResponse.getId();
-                System.out.println("Listing " + clickedListingId + " was clicked!!");
+                NavigationUtils.startListingActivity(context, clickedListingId);
             }
         });
     }

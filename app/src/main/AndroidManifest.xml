@@ -15,10 +15,11 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <meta-data android:name="com.google.android.geo.API_KEY"
-            android:value="@string/google_api_key"/>
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="@string/google_api_key" />
 
-        <activity android:name=".activities.HostActivity"></activity>
+        <activity android:name=".activities.HostActivity" />
         <activity android:name=".activities.LoginActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -28,6 +29,7 @@
         </activity>
         <activity android:name=".activities.RegisterActivity" />
         <activity android:name=".activities.HomeActivity" />
+        <activity android:name=".activities.ListingActivity"/>
 
     </application>
 

@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.bookaroom.R;
 import com.bookaroom.enums.UserRole;
+import com.bookaroom.enums.ViewMode;
 import com.bookaroom.models.BooleanResponse;
 import com.bookaroom.models.LoginRequest;
 import com.bookaroom.remote.ApiUtils;
@@ -97,6 +98,8 @@ public class LoginActivity extends AppCompatActivity {
                 BooleanResponse userIsHost = response.body();
                 UserRole userRole = userIsHost.isFlag() ? UserRole.Host : UserRole.Guest;
                 SessionManager.setUserRole(LoginActivity.this, userRole);
+                SessionManager.setViewMode(LoginActivity.this,
+                                           Constants.INITIAL_VIEW_MODE);
 
                 NavigationUtils.startHomeActivity(LoginActivity.this);
             }

@@ -3,6 +3,8 @@ package com.bookaroom.utils;
 import android.Manifest;
 import android.graphics.Bitmap;
 
+import com.bookaroom.enums.ViewMode;
+
 public class Constants {
 
     public static final String BASE_URL = "https://10.0.2.2";
@@ -31,4 +33,6 @@ public class Constants {
     public static boolean INITIALIZE_FORMS_WITH_TEST_DATA = true;
 
     public static final String DEFAULT_DATE_FORMAT = "dd-MM-yyyy";
+
+    public static final ViewMode INITIAL_VIEW_MODE = ViewMode.Guest;
 }
