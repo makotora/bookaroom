@@ -7,6 +7,8 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bookaroom.R;
+import com.bookaroom.enums.UserRole;
+import com.bookaroom.models.BooleanResponse;
 import com.bookaroom.models.LoginRequest;
 import com.bookaroom.remote.ApiUtils;
 import com.bookaroom.remote.services.UserService;
@@ -65,12 +67,7 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call call, Response response) {
                 if (response.isSuccessful()) {
-                    Toast.makeText(LoginActivity.this, R.string.login_success, Toast.LENGTH_SHORT).show();
-                    String authenticationToken =
-                            response.headers().get(Constants.AUTHORIZATION_HEADER);
-                    SessionManager.setAuthenticationToken(LoginActivity.this, authenticationToken);
-
-                    NavigationUtils.startHomeActivity(LoginActivity.this);
+                    handleSuccessfulLogin(response);
                 }
                 else {
                     Toast.makeText(LoginActivity.this, R.string.login_failed, Toast.LENGTH_SHORT).show();
@@ -81,6 +78,34 @@ public class LoginActivity extends AppCompatActivity {
             public void onFailure(Call call, Throwable t) {
                 Toast.makeText(LoginActivity.this, t.getMessage(), Toast.LENGTH_SHORT).show();
                 Toast.makeText(LoginActivity.this, R.string.login_failed_failure, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void handleSuccessfulLogin(Response response) {
+        Toast.makeText(LoginActivity.this, R.string.login_success, Toast.LENGTH_SHORT).show();
+        String authenticationToken =
+                response.headers().get(Constants.AUTHORIZATION_HEADER);
+        SessionManager.setAuthenticationToken(LoginActivity.this, authenticationToken);
+
+        Call<BooleanResponse> userRoleCall = userService.userIsHost();
+        userRoleCall.enqueue(new Callback<BooleanResponse>() {
+            @Override
+            public void onResponse(
+                    Call<BooleanResponse> call,
+                    Response<BooleanResponse> response) {
+                BooleanResponse userIsHost = response.body();
+                UserRole userRole = userIsHost.isFlag() ? UserRole.Host : UserRole.Guest;
+                SessionManager.setUserRole(LoginActivity.this, userRole);
+
+                NavigationUtils.startHomeActivity(LoginActivity.this);
+            }
+
+            @Override
+            public void onFailure(
+                    Call call,
+                    Throwable t) {
+                Utils.makeInternalErrorToast(LoginActivity.this);
             }
         });
     }

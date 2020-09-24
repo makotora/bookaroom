@@ -3,6 +3,7 @@ package com.bookaroom.utils.navigation;
 import android.app.Activity;
 import android.content.Intent;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import androidx.core.util.Consumer;
 
@@ -11,8 +12,9 @@ import com.bookaroom.activities.HomeActivity;
 import com.bookaroom.activities.HostActivity;
 import com.bookaroom.activities.LoginActivity;
 import com.bookaroom.activities.RegisterActivity;
+import com.bookaroom.enums.UserRole;
 import com.bookaroom.utils.Utils;
-import com.bookaroom.utils.navigation.ActivityNavigationInfo;
+import com.bookaroom.utils.session.SessionManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.Collections;
@@ -44,21 +46,22 @@ public class NavigationUtils {
         activityToNavigationInfo = Collections.unmodifiableMap(initMap);
     }
 
-    private static final Map<Class, Consumer<BottomNavigationView>> activityToBottomNavInit;
+    private static final Map<Class, Consumer<NavigationInitInfo>> activityToBottomNavInit;
     static {
-        Map<Class, Consumer<BottomNavigationView>> initMap = new HashMap<>();
-        initMap.put(HomeActivity.class, (bottomNavigationView -> updateNavigationForGuest(bottomNavigationView)));
-        initMap.put(HostActivity.class, (bottomNavigationView -> updateNavigationForHost(bottomNavigationView)));
+        Map<Class, Consumer<NavigationInitInfo>> initMap = new HashMap<>();
+        initMap.put(HomeActivity.class,
+                    (navigationInitInfo -> updateNavigationForGuest(navigationInitInfo)));
+        initMap.put(HostActivity.class, (navigationInitInfo -> updateNavigationForHost(navigationInitInfo)));
         activityToBottomNavInit = Collections.unmodifiableMap(initMap);
     }
 
     public static void initializeBottomNavigationBar(Activity currentActivity) {
         BottomNavigationView bottomNavView = (BottomNavigationView) currentActivity.findViewById(R.id.bottom_navigation);
 
-        Consumer<BottomNavigationView> bottomNavigationViewInitializer =
+        Consumer<NavigationInitInfo> bottomNavigationViewInitializer =
                 activityToBottomNavInit.get(currentActivity.getClass());
         if (bottomNavigationViewInitializer != null) {
-            bottomNavigationViewInitializer.accept(bottomNavView);
+            bottomNavigationViewInitializer.accept(new NavigationInitInfo(currentActivity, bottomNavView));
         }
 
         ActivityNavigationInfo activityNavigationInfo = activityToNavigationInfo.get(currentActivity.getClass());
@@ -89,14 +92,24 @@ public class NavigationUtils {
         return true;
     }
 
-    private static void updateNavigationForHost(BottomNavigationView bottomNavigationView) {
+    private static void updateNavigationForHost(NavigationInitInfo navigationInitInfo) {
+        BottomNavigationView bottomNavigationView = navigationInitInfo.getBottomNavigationView();
+
         bottomNavigationView.getMenu().getItem(MENU_ITEM_GUEST_POSITION).setVisible(true);
         bottomNavigationView.getMenu().getItem(MENU_ITEM_HOST_POSITION).setVisible(false);
     }
 
-    private static void updateNavigationForGuest(BottomNavigationView bottomNavigationView) {
+    private static void updateNavigationForGuest(NavigationInitInfo navigationInitInfo) {
+        BottomNavigationView bottomNavigationView = navigationInitInfo.getBottomNavigationView();
+
         bottomNavigationView.getMenu().getItem(MENU_ITEM_GUEST_POSITION).setVisible(false);
         bottomNavigationView.getMenu().getItem(MENU_ITEM_HOST_POSITION).setVisible(true);
+
+        Activity currentActivity = navigationInitInfo.getCurrentActivity();
+        UserRole userRole = SessionManager.getUserRole(currentActivity);
+        if (userRole == UserRole.Guest) {
+            bottomNavigationView.getMenu().getItem(MENU_ITEM_HOST_POSITION).setEnabled(false);
+        }
     }
 
     public static void startRegisterActivity(Activity currentActivity) {
