@@ -8,7 +8,8 @@ public class ActivityNavigationInfo {
     private final int menuItemPosition;
     private final Consumer<Activity> startFromActivityConsumer;
 
-    public ActivityNavigationInfo(int menuItemPosition, Consumer<Activity> startFromActivityConsumer) {
+    public ActivityNavigationInfo(int menuItemPosition,
+                                  Consumer<Activity> startFromActivityConsumer) {
         this.menuItemPosition = menuItemPosition;
         this.startFromActivityConsumer = startFromActivityConsumer;
     }
