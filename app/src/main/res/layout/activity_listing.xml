@@ -223,6 +223,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:autoLink="all"
+                    android:clickable="true"
+                    android:cursorVisible="true"
                     android:textColor="@android:color/holo_blue_dark"
                     android:text="@string/listing_view_host"/>
 

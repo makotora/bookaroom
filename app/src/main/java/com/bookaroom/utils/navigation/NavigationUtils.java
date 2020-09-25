@@ -9,6 +9,7 @@ import androidx.core.util.Consumer;
 import com.bookaroom.R;
 import com.bookaroom.activities.HomeActivity;
 import com.bookaroom.activities.HostActivity;
+import com.bookaroom.activities.HostProfileActivity;
 import com.bookaroom.activities.ListingActivity;
 import com.bookaroom.activities.LoginActivity;
 import com.bookaroom.activities.RegisterActivity;
@@ -47,6 +48,8 @@ public class NavigationUtils {
                                                                    (Activity a) -> handleHomeActivityNavigation(a)));
         initMap.put(ListingActivity.class, new ActivityNavigationInfo(MENU_ITEM_GUEST_POSITION,
                                                                    (Activity a) -> {}));
+        initMap.put(HostProfileActivity.class, new ActivityNavigationInfo(MENU_ITEM_GUEST_POSITION,
+                                                                      (Activity a) -> {}));
         initMap.put(HostActivity.class, new ActivityNavigationInfo(MENU_ITEM_HOST_POSITION,
                                                                    (Activity a) -> handleHostActivityNavigation(a)));
         activityToNavigationInfo = Collections.unmodifiableMap(initMap);
@@ -189,5 +192,12 @@ public class NavigationUtils {
         }
 
         currentActivity.startActivity(hostIntent);
+    }
+
+    public static void startHostProfileActivity(Activity currentActivity, Long hostId) {
+        Intent hostProfileIntent = new Intent(currentActivity, HostProfileActivity.class);
+        hostProfileIntent.putExtra(HostProfileActivity.INTENT_EXTRA_HOST_ID_NAME, hostId);
+
+        currentActivity.startActivity(hostProfileIntent);
     }
 }

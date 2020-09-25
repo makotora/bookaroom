@@ -29,8 +29,8 @@
         </activity>
         <activity android:name=".activities.RegisterActivity" />
         <activity android:name=".activities.HomeActivity" />
-        <activity android:name=".activities.ListingActivity"/>
-
+        <activity android:name=".activities.ListingActivity" />
+        <activity android:name=".activities.HostProfileActivity"/>
     </application>
 
 </manifest>

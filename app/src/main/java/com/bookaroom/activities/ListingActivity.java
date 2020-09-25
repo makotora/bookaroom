@@ -3,31 +3,48 @@ package com.bookaroom.activities;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.viewpager.widget.ViewPager;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.location.Address;
+import android.location.Geocoder;
 import android.os.Bundle;
 import android.text.method.LinkMovementMethod;
 import android.view.View;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bookaroom.R;
 import com.bookaroom.models.ListingFullViewResponse;
 import com.bookaroom.remote.ApiUtils;
+import com.bookaroom.remote.PicassoTrustAll;
 import com.bookaroom.remote.services.ListingService;
+import com.bookaroom.utils.Constants;
+import com.bookaroom.utils.RequestUtils;
+import com.bookaroom.utils.ResponseUtils;
 import com.bookaroom.utils.Utils;
 import com.bookaroom.utils.navigation.NavigationUtils;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.squareup.picasso.MemoryPolicy;
+import com.squareup.picasso.NetworkPolicy;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class ListingActivity extends AppCompatActivity {
+public class ListingActivity extends AppCompatActivity implements OnMapReadyCallback  {
 
     public static final String INTENT_EXTRA_LISTING_ID_NAME = "EXTRA_LISTING_ID";
     public static final String INTENT_EXTRA_CHECK_IN_NAME = "EXTRA_CHECK_IN";
@@ -39,7 +56,7 @@ public class ListingActivity extends AppCompatActivity {
     private ListingService listingService;
 
     // Intent data
-    private Long listingId;
+    private long listingId;
     private Date searchCheckIn;
     private Date searchCheckOut;
     private Integer searchNumberOfGuests;
@@ -78,7 +95,6 @@ public class ListingActivity extends AppCompatActivity {
         NavigationUtils.initializeBottomNavigationBar(this);
 
         initializeViewFields();
-        initializeHostViewLink();
         initializeListingData();
     }
 
@@ -114,23 +130,19 @@ public class ListingActivity extends AppCompatActivity {
         tvAddress = findViewById(R.id.listing_address);
 
         chkHasLivingRoom = findViewById(R.id.listing_has_living_room);
+        // Disable editting on the checkbox
+        chkHasLivingRoom.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView,
+                                         boolean isChecked) {
+                if(isChecked){
+                    chkHasLivingRoom.setChecked(false);
+                }
+            }
+        });
 
         hostImageView = findViewById(R.id.listing_host_image);
         tvViewHostProfileLink = findViewById(R.id.listing_host_view_link);
-    }
-
-    private void initializeHostViewLink() {
-        tvViewHostProfileLink.setMovementMethod(LinkMovementMethod.getInstance());
-        tvViewHostProfileLink.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                viewHostProfile();
-            }
-        });
-    }
-
-    private void viewHostProfile() {
-        // TODO
     }
 
     private void initializeListingData() {
@@ -155,7 +167,128 @@ public class ListingActivity extends AppCompatActivity {
         });
     }
 
-    private void handleViewListingResponse(ListingFullViewResponse body) {
+    private void handleViewListingResponse(ListingFullViewResponse lfvr) {
+        initializeListingPicturesView(lfvr.getMainPicturePath(), lfvr.getAdditionalPicturePaths());
+        tvNumberOfBeds.setText(Utils.getIntegerStringOrDefault(lfvr.getNumberOfBeds(), ""));
+        tvNumberOfBathrooms.setText(Utils.getIntegerStringOrDefault(lfvr.getNumberOfBathrooms(), ""));
+        tvListingType.setText(lfvr.getTypeStr());
+        tvNumberOfBedrooms.setText(Utils.getIntegerStringOrDefault(lfvr.getNumberOfBedrooms(), ""));
+        tvArea.setText(Utils.getIntegerStringOrDefault(lfvr.getArea(), ""));
+        tvDescription.setText(lfvr.getDescription());
+        tvRules.setText(lfvr.getRules());
+        tvAddress.setText(lfvr.getAddress());
+
+        initializeListingMap(lfvr.getAddress(), lfvr.getLatitude(), lfvr.getLongitude());
+
+        chkHasLivingRoom.setChecked(lfvr.getIsAvailable() != null && lfvr.getIsAvailable().booleanValue());
+        // Disable editting on the checkbox
+        chkHasLivingRoom.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView,
+                                         boolean isChecked) {
+                if(isChecked){
+                    chkHasLivingRoom.setChecked(false);
+                }
+            }
+        });
+
+        PicassoTrustAll.getInstance(this).load(RequestUtils.getUrlForServerFilePath(lfvr.getHostPicturePath()))
+                .networkPolicy(NetworkPolicy.NO_CACHE)
+                .memoryPolicy(MemoryPolicy.NO_CACHE).into(hostImageView);
+
+        initializeHostViewLink(lfvr.getHostId());
+    }
+
+    private void initializeListingPicturesView(
+            String mainPicturePath,
+            List<String> additionalPicturePaths) {
         // TODO
+    }
+
+    public LatLng getLocationFromAddress(
+            Context context,
+            String strAddress) {
+
+        Geocoder coder = new Geocoder(context,
+                                      Locale.getDefault());
+        List<Address> possibleAddresses;
+        LatLng latLng = null;
+
+        try {
+            possibleAddresses = coder.getFromLocationName(strAddress,
+                                                          1);
+            if (possibleAddresses == null) {
+                return null;
+            }
+            Address location = possibleAddresses.get(0);
+
+            latLng = new LatLng(location.getLatitude(),
+                                location.getLongitude());
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return latLng;
+    }
+
+    private void initializeListingMap(String address, Double latitude, Double longitude) {
+        if (latitude != null && longitude != null) {
+            listingLatLong = new LatLng(latitude, longitude);
+        }
+        else if (!Utils.isNullOrEmpty(address)) { // Try to get LatLng using the address
+            listingLatLong = getLocationFromAddress(this, address);
+        }
+
+        SupportMapFragment listingMapFragment =
+                (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.listing_map);
+        listingMapFragment.getMapAsync(this);
+    }
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        listingMap = googleMap;
+
+        if (listingLatLong != null) {
+            setMapLocation(googleMap,
+                           "",
+                           listingLatLong);
+            return;
+        }
+    }
+
+    private void setMapLocation(
+            GoogleMap googleMap,
+            String markerTitle,
+            LatLng locationLatLong) {
+        if (googleMap == null) {
+            return;
+        }
+
+        googleMap.clear();
+        MarkerOptions currentLocationMO = new MarkerOptions().position(locationLatLong).title(markerTitle);
+
+        googleMap.animateCamera(CameraUpdateFactory.newLatLng(locationLatLong));
+        googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(locationLatLong,
+                                                                  Constants.DEFAULT_MAP_ZOOM));
+        googleMap.addMarker(currentLocationMO);
+    }
+
+    private void initializeHostViewLink(Long hostId) {
+        tvViewHostProfileLink.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                viewHostProfile(hostId);
+            }
+        });
+    }
+
+    private void viewHostProfile(Long hostId) {
+        if (hostId == null) {
+            Toast.makeText(this, R.string.listing_view_host_no_id, Toast.LENGTH_SHORT);
+            return;
+        }
+
+        NavigationUtils.startHostProfileActivity(this, hostId);
     }
 }
