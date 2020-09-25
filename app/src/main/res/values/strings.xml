@@ -105,4 +105,5 @@
     <string name="host_profile_email_title">Email:</string>
     <string name="host_profile_phone_title">Phone:</string>
     <string name="host_profile_category_reviews">Reviews</string>
+    <string name="listing_category_pictures">Pictures</string>
 </resources>

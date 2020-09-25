@@ -5,26 +5,27 @@ import androidx.viewpager.widget.ViewPager;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.location.Address;
 import android.location.Geocoder;
 import android.os.Bundle;
-import android.text.method.LinkMovementMethod;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ViewFlipper;
 
 import com.bookaroom.R;
+import com.bookaroom.adapters.ListingImagesPagerAdapter;
 import com.bookaroom.models.ListingFullViewResponse;
 import com.bookaroom.remote.ApiUtils;
 import com.bookaroom.remote.PicassoTrustAll;
 import com.bookaroom.remote.services.ListingService;
 import com.bookaroom.utils.Constants;
 import com.bookaroom.utils.RequestUtils;
-import com.bookaroom.utils.ResponseUtils;
 import com.bookaroom.utils.Utils;
 import com.bookaroom.utils.navigation.NavigationUtils;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -35,7 +36,10 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.squareup.picasso.MemoryPolicy;
 import com.squareup.picasso.NetworkPolicy;
+import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -62,7 +66,14 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
     private Integer searchNumberOfGuests;
 
     // Display data
+    private ViewFlipper picturesViewFlipper;
+    private static final int FLIP_IMAGE_INTERVAL_MS = 3000;
+
     private ViewPager picturesViewPager;
+    private List<Bitmap> pictureBitmaps;
+    private ListingImagesPagerAdapter picturesPagerAdapter;
+    private List<Target> pictureLoadTargets = new ArrayList<>();
+
     private TextView tvNumberOfBeds;
     private TextView tvNumberOfBathrooms;
     private TextView tvListingType;
@@ -95,6 +106,8 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
         NavigationUtils.initializeBottomNavigationBar(this);
 
         initializeViewFields();
+        initializePicturePagerAdapter();
+        initializePicturesViewFlipper();
         initializeListingData();
     }
 
@@ -120,6 +133,7 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
 
     private void initializeViewFields() {
         picturesViewPager = findViewById(R.id.listing_pictures_vp);
+        picturesViewFlipper = findViewById(R.id.listing_pictures_vf);
         tvNumberOfBeds = findViewById(R.id.listing_number_of_beds);
         tvNumberOfBathrooms = findViewById(R.id.listing_number_of_bathrooms);
         tvListingType = findViewById(R.id.listing_type);
@@ -143,6 +157,17 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
 
         hostImageView = findViewById(R.id.listing_host_image);
         tvViewHostProfileLink = findViewById(R.id.listing_host_view_link);
+    }
+
+    private void initializePicturePagerAdapter() {
+        pictureBitmaps = new ArrayList<>();
+        picturesPagerAdapter = new ListingImagesPagerAdapter(this, pictureBitmaps);
+        picturesViewPager.setAdapter(picturesPagerAdapter);
+    }
+
+    private void initializePicturesViewFlipper() {
+        picturesViewFlipper.setFlipInterval(FLIP_IMAGE_INTERVAL_MS);
+        picturesViewFlipper.startFlipping();
     }
 
     private void initializeListingData() {
@@ -202,7 +227,59 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
     private void initializeListingPicturesView(
             String mainPicturePath,
             List<String> additionalPicturePaths) {
-        // TODO
+        List<String> allPicturePaths = new ArrayList<>();
+
+        if (mainPicturePath != null) {
+            allPicturePaths.add(mainPicturePath);
+        }
+
+        if (additionalPicturePaths != null) {
+            allPicturePaths.addAll(additionalPicturePaths);
+        }
+        pictureLoadTargets.clear();
+
+        for (String picturePath : allPicturePaths) {
+
+            // One target per additional image load
+            Target pictureLoadTarget = new Target() {
+                @Override
+                public void onBitmapLoaded(
+                        Bitmap bitmap,
+                        Picasso.LoadedFrom from) {
+                    addPictureBitmapSynchronized(bitmap);
+                }
+
+                @Override
+                public void onBitmapFailed(
+                        Exception e,
+                        Drawable errorDrawable) {
+                    e.printStackTrace();
+                    Utils.makeInternalErrorToast(ListingActivity.this);
+                }
+
+                @Override
+                public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+                }
+            };
+
+            // Keep inside the global list to avoid GC
+            pictureLoadTargets.add(pictureLoadTarget);
+
+            PicassoTrustAll.getInstance(this).load(RequestUtils.getUrlForServerFilePath(picturePath))
+                    .networkPolicy(NetworkPolicy.NO_CACHE)
+                    .memoryPolicy(MemoryPolicy.NO_CACHE).into(pictureLoadTarget);
+        }
+    }
+
+    private synchronized void addPictureBitmapSynchronized(Bitmap bitmap) {
+        pictureBitmaps.add(bitmap);
+        picturesPagerAdapter.notifyDataSetChanged();
+
+        ImageView newImageView = new ImageView(this);
+        newImageView.setImageBitmap(bitmap);
+
+        picturesViewFlipper.addView(newImageView);
     }
 
     public LatLng getLocationFromAddress(
