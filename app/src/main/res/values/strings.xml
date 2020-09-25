@@ -84,4 +84,18 @@
     <string name="search_error_number_of_guests">Please enter number of guests</string>
     <string name="search_error_invalid_dates">Check out date must be after the check in date</string>
     <string name="search_no_results">No search results available</string>
+    <string name="listing_address_title">Address:</string>
+    <string name="listing_category_space">Space</string>
+    <string name="listing_category_location">Location</string>
+    <string name="listing_beds_title">Number of beds:</string>
+    <string name="listing_bathrooms_title">Number of bathrooms:</string>
+    <string name="listing_type_title">Type:</string>
+    <string name="listing_bedrooms_title">Number of bedrooms:</string>
+    <string name="listing_category_description">Description</string>
+    <string name="listing_category_rules">Rules</string>
+    <string name="listing_category_amenities">Amenities</string>
+    <string name="listing_has_living_room_title">Living room:</string>
+    <string name="listing_category_host">Host</string>
+    <string name="listing_view_host">View profile</string>
+    <string name="listing_area_title">Area:</string>
 </resources>

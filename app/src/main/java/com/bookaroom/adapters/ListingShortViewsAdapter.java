@@ -12,6 +12,7 @@ import android.widget.TextView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bookaroom.R;
+import com.bookaroom.models.ListingSearchRequest;
 import com.bookaroom.models.ListingShortViewResponse;
 import com.bookaroom.remote.PicassoTrustAll;
 import com.bookaroom.utils.RequestUtils;
@@ -27,6 +28,7 @@ public class ListingShortViewsAdapter extends RecyclerView.Adapter<RecyclerView.
     private int itemLayoutResource;
     private int loadingLayoutResource;
     private List<ListingShortViewResponse> listingShortViews;
+    private ListingSearchRequest lastSearchRequest;
 
     private final int VIEW_TYPE_ITEM = 0;
     private final int VIEW_TYPE_LOADING = 1;
@@ -137,7 +139,7 @@ public class ListingShortViewsAdapter extends RecyclerView.Adapter<RecyclerView.
             @Override
             public void onClick(View v) {
                 Long clickedListingId = clickedListingShortViewResponse.getId();
-                NavigationUtils.startListingActivity(context, clickedListingId);
+                NavigationUtils.startListingActivity(context, clickedListingId, lastSearchRequest);
             }
         });
     }
@@ -172,5 +174,9 @@ public class ListingShortViewsAdapter extends RecyclerView.Adapter<RecyclerView.
     public synchronized void removeLastItem() {
         listingShortViews.remove(getItemCount() - 1);
         notifyDataSetChanged();
+    }
+
+    public void setLastSearchRequest(ListingSearchRequest lastSearchRequest) {
+        this.lastSearchRequest = lastSearchRequest;
     }
 }

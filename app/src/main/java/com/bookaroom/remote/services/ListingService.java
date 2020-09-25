@@ -1,6 +1,7 @@
 package com.bookaroom.remote.services;
 
 import com.bookaroom.models.ActionResponse;
+import com.bookaroom.models.ListingFullViewResponse;
 import com.bookaroom.models.ListingResponse;
 import com.bookaroom.models.ListingShortViewResponse;
 
@@ -80,4 +81,10 @@ public interface ListingService {
                                                 @Query("checkIn") Date checkIn,
                                                 @Query("checkOut") Date checkOut,
                                                 @Query("numberOfGuests") Integer numberOfGuests);
+
+    @GET(ENDPOINT_PATH + "/view")
+    Call<ListingFullViewResponse> view(@Query("listingId") Long listingId,
+                                       @Query("checkIn") Date checkIn,
+                                       @Query("checkOut") Date checkOut,
+                                       @Query("numberOfGuests") Integer numberOfGuests);
 }

@@ -14,6 +14,7 @@ import com.bookaroom.activities.LoginActivity;
 import com.bookaroom.activities.RegisterActivity;
 import com.bookaroom.enums.UserRole;
 import com.bookaroom.enums.ViewMode;
+import com.bookaroom.models.ListingSearchRequest;
 import com.bookaroom.utils.Utils;
 import com.bookaroom.utils.session.SessionManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -169,9 +170,24 @@ public class NavigationUtils {
         currentActivity.startActivity(hostIntent);
     }
 
-    public static void startListingActivity(Activity currentActivity, long listingId) {
+    public static void startListingActivity(Activity currentActivity, long listingId,
+                                            ListingSearchRequest lastSearchRequest) {
         Intent hostIntent = new Intent(currentActivity, ListingActivity.class);
         hostIntent.putExtra(ListingActivity.INTENT_EXTRA_LISTING_ID_NAME, listingId);
+
+        if (lastSearchRequest != null) {
+            if (lastSearchRequest.getCheckIn() != null) {
+                hostIntent.putExtra(ListingActivity.INTENT_EXTRA_CHECK_IN_NAME,
+                                    lastSearchRequest.getCheckIn().getTime());
+            }
+            if (lastSearchRequest.getCheckOut() != null) {
+                hostIntent.putExtra(ListingActivity.INTENT_EXTRA_CHECK_OUT_NAME,
+                                    lastSearchRequest.getCheckOut().getTime());
+            }
+            hostIntent.putExtra(ListingActivity.INTENT_EXTRA_NUM_GUESTS_NAME,
+                                lastSearchRequest.getNumberOfGuests());
+        }
+
         currentActivity.startActivity(hostIntent);
     }
 }

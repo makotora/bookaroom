@@ -257,6 +257,8 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void searchListings(ListingSearchRequest searchRequest) {
+        listingShortViewsAdapter.setLastSearchRequest(searchRequest);
+
         Call searchCall = listingService.search(searchRequest.getState(),
                                                 searchRequest.getCity(),
                                                 searchRequest.getCountry(),
