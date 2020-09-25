@@ -219,6 +219,14 @@
                     android:layout_marginTop="20dp"
                     android:scrollbars="horizontal" />
 
+                <!-- RESERVATION -->
+                <Button
+                    android:id="@+id/listing_reservation_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/listing_reserve"
+                    android:layout_marginTop="20dp"/>
+
                 <!-- HOST -->
                 <TextView
                     android:layout_width="wrap_content"
@@ -243,8 +251,54 @@
                     android:textColor="@android:color/holo_blue_dark"
                     android:text="@string/listing_view_host"/>
 
+                <!-- REVIEW -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:text="@string/listing_category_review"
+                    android:textSize="20dp"
+                    android:layout_marginTop="15dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+
+                    <RatingBar
+                        android:id="@+id/listing_review_rating_bar"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:numStars="5"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="" />
+
+                    <EditText
+                        android:id="@+id/listing_review_edt_text"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapCharacters|textCapSentences"
+                        android:maxLength="2000"
+                        android:maxLines="4"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center">
+                    <Button
+                        android:id="@+id/listing_review_submit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/listing_submit_review"/>
+                    </LinearLayout>
+
+                </LinearLayout>
 
             </LinearLayout>
+
+
 
         </ScrollView>
 

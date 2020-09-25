@@ -11,21 +11,29 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
 
 import com.bookaroom.R;
 import com.bookaroom.adapters.ListingImagesPagerAdapter;
+import com.bookaroom.models.ActionResponse;
 import com.bookaroom.models.ListingFullViewResponse;
+import com.bookaroom.models.ListingReviewRequest;
+import com.bookaroom.models.ReservationRequest;
 import com.bookaroom.remote.ApiUtils;
 import com.bookaroom.remote.PicassoTrustAll;
+import com.bookaroom.remote.services.ListingReviewsService;
 import com.bookaroom.remote.services.ListingService;
 import com.bookaroom.utils.Constants;
 import com.bookaroom.utils.RequestUtils;
+import com.bookaroom.utils.ResponseUtils;
 import com.bookaroom.utils.Utils;
 import com.bookaroom.utils.navigation.NavigationUtils;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -58,6 +66,7 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
     public static final long LISTING_ID_DEFAULT_VALUE = -1;
 
     private ListingService listingService;
+    private ListingReviewsService listingReviewsService;
 
     // Intent data
     private long listingId;
@@ -88,8 +97,15 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
 
     private CheckBox chkHasLivingRoom;
 
+    private Button reservationButton;
+
     private ImageView hostImageView;
     private TextView tvViewHostProfileLink;
+
+    // Review form
+    private RatingBar reviewRatingBar;
+    private EditText reviewEditText;
+    private Button reviewSubmitButton;
 
     public ListingActivity() {
     }
@@ -100,6 +116,7 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
         setContentView(R.layout.activity_listing);
 
         listingService = ApiUtils.getListingService(this);
+        listingReviewsService = ApiUtils.getListingReviewsService(this);
 
         initializeIntentData();
 
@@ -127,8 +144,10 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
 
         searchCheckIn = searchCheckInInt == 0 ? null : new Date(searchCheckInInt);
         searchCheckOut = searchCheckOutInt == 0 ? null : new Date(searchCheckOutInt);
-        searchNumberOfGuests = intent.getIntExtra(INTENT_EXTRA_NUM_GUESTS_NAME,
-                                                  1);
+
+        int intentSearchNumberOfGuests = intent.getIntExtra(INTENT_EXTRA_NUM_GUESTS_NAME,
+                                                            0);
+        searchNumberOfGuests = intentSearchNumberOfGuests == 0 ? null : intentSearchNumberOfGuests;
     }
 
     private void initializeViewFields() {
@@ -155,6 +174,7 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
             }
         });
 
+        reservationButton = findViewById(R.id.listing_reservation_button);
         hostImageView = findViewById(R.id.listing_host_image);
         tvViewHostProfileLink = findViewById(R.id.listing_host_view_link);
     }
@@ -221,7 +241,9 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
                 .networkPolicy(NetworkPolicy.NO_CACHE)
                 .memoryPolicy(MemoryPolicy.NO_CACHE).into(hostImageView);
 
+        initializeReservationButton(lfvr.getIsAvailable());
         initializeHostViewLink(lfvr.getHostId());
+        initializeReviewForm(lfvr.getHasLastReservationPassed());
     }
 
     private void initializeListingPicturesView(
@@ -351,6 +373,53 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
         googleMap.addMarker(currentLocationMO);
     }
 
+    private void initializeReservationButton(Boolean listingIsAvailable) {
+        if (listingIsAvailable == null ||
+                !listingIsAvailable.booleanValue() || searchCheckIn == null || searchCheckOut == null || searchNumberOfGuests == null) {
+            disableReservationButton();
+            return;
+        }
+
+        reservationButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                reserveListing(listingIsAvailable);
+            }
+        });
+    }
+
+    private void reserveListing(Boolean listingIsAvailable) {
+        if (listingIsAvailable == null ||
+                !listingIsAvailable.booleanValue() || searchCheckIn == null || searchCheckOut == null || searchNumberOfGuests == null) {
+            disableReservationButton(); // Shouldn't be here..
+            return;
+        }
+
+        Call reservationCall = listingService.reserve(new ReservationRequest(listingId,
+                                                                             searchCheckIn,
+                                                                             searchCheckOut, searchNumberOfGuests));
+        reservationCall.enqueue(new Callback<ActionResponse>() {
+            @Override
+            public void onResponse(
+                    Call<ActionResponse> call,
+                    Response<ActionResponse> response) {
+                ResponseUtils.handleActionResponse(ListingActivity.this, response,
+                                                   (ar) -> disableReservationButton(), (ar) -> {});
+            }
+
+            @Override
+            public void onFailure(
+                    Call call,
+                    Throwable t) {
+                Utils.makeInternalErrorToast(ListingActivity.this);
+            }
+        });
+    }
+
+    private void disableReservationButton() {
+        reservationButton.setEnabled(false);
+    }
+
     private void initializeHostViewLink(Long hostId) {
         tvViewHostProfileLink.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -367,5 +436,57 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
         }
 
         NavigationUtils.startHostProfileActivity(this, hostId);
+    }
+
+    private void initializeReviewForm(boolean hasLastReservationPassed) {
+        reviewRatingBar = findViewById(R.id.listing_review_rating_bar);
+        reviewEditText = findViewById(R.id.listing_review_edt_text);
+        reviewSubmitButton = findViewById(R.id.listing_review_submit);
+
+        if (!hasLastReservationPassed) {
+            disableListingReview();
+        }
+
+        reviewSubmitButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                submitReview();
+            }
+        });
+    }
+
+    private void submitReview() {
+        final float rating = reviewRatingBar.getRating();
+        final String review = Utils.getEditTextString(reviewEditText);
+
+        Call submitReviewCall =
+                listingReviewsService.addReview(new ListingReviewRequest(listingId, rating,
+                                                                         review));
+        submitReviewCall.enqueue(new Callback<ActionResponse>() {
+            @Override
+            public void onResponse(
+                    Call<ActionResponse> call,
+                    Response<ActionResponse> response) {
+                ResponseUtils.handleActionResponse(ListingActivity.this,
+                                                   response,
+                                                   (ar) ->
+                                                           disableListingReview(),
+                                                   (ar) -> {
+                                                   });
+            }
+
+            @Override
+            public void onFailure(
+                    Call call,
+                    Throwable t) {
+                Utils.makeInternalErrorToast(ListingActivity.this);
+            }
+        });
+    }
+
+    private void disableListingReview() {
+        reviewRatingBar.setEnabled(false);
+        reviewEditText.setEnabled(false);
+        reviewSubmitButton.setEnabled(false);
     }
 }

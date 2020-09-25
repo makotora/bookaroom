@@ -4,6 +4,7 @@ import com.bookaroom.models.ActionResponse;
 import com.bookaroom.models.ListingFullViewResponse;
 import com.bookaroom.models.ListingResponse;
 import com.bookaroom.models.ListingShortViewResponse;
+import com.bookaroom.models.ReservationRequest;
 
 import java.util.Date;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.List;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import retrofit2.Call;
+import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Multipart;
@@ -87,4 +89,7 @@ public interface ListingService {
                                        @Query("checkIn") Date checkIn,
                                        @Query("checkOut") Date checkOut,
                                        @Query("numberOfGuests") Integer numberOfGuests);
+
+    @POST(ENDPOINT_PATH + "/reserve")
+    Call<ActionResponse> reserve(@Body ReservationRequest reservationRequest);
 }

@@ -106,4 +106,7 @@
     <string name="host_profile_phone_title">Phone:</string>
     <string name="host_profile_category_reviews">Reviews</string>
     <string name="listing_category_pictures">Pictures</string>
+    <string name="listing_category_review">Submit your review</string>
+    <string name="listing_submit_review">Submit</string>
+    <string name="listing_reserve">RESERVE</string>
 </resources>
