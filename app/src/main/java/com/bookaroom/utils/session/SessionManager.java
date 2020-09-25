@@ -20,9 +20,20 @@ public class SessionManager {
 
     public static void setAuthenticationToken(Activity activity, String authenticationToken) {
         SessionManager.authenticationToken = authenticationToken;
+
+        // Also save token to shared preferences
+        SharedPreferences.Editor spEditor = getSharedPreferences(activity).edit();
+        spEditor.putString(AUTHENTICATION_TOKEN_KEY, authenticationToken);
+        spEditor.commit();
     }
 
     public synchronized static String getAuthenticationToken(Context context) {
+        if (authenticationToken == null) {
+            // Try to retrieve the token from the shared preferences
+            SharedPreferences sp = getSharedPreferences(context);
+            authenticationToken = sp.getString(AUTHENTICATION_TOKEN_KEY, null);
+        }
+
         return authenticationToken;
     }
 
