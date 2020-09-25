@@ -248,7 +248,6 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
                                 location.getLongitude());
 
         } catch (Exception ex) {
-
             ex.printStackTrace();
         }
 
@@ -488,6 +487,10 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
             GoogleMap googleMap,
             String markerTitle,
             LatLng currentLocationLatLng) {
+        if (googleMap == null) {
+            return;
+        }
+
         googleMap.clear();
         MarkerOptions currentLocationMO = new MarkerOptions().position(currentLocationLatLng).title(markerTitle);
 
@@ -875,10 +878,18 @@ public class HostActivity extends FragmentActivity implements OnMapReadyCallback
             setDataFromUserListing();
             initializeDeleteButton();
         }
+        else { // No listing created. Initialize data
+            initializeDataForCreate();
+        }
 
+        // Create if user has a listing, Update otherwise
         initializeSubmitButton(userHasListing);
+    }
 
-        if (!userHasListing && Constants.INITIALIZE_FORMS_WITH_TEST_DATA) {
+    private void initializeDataForCreate() {
+        initializeListingMap();
+
+        if (Constants.INITIALIZE_FORMS_WITH_TEST_DATA) {
             setDummyData();
         }
     }

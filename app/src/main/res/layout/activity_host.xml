@@ -56,7 +56,7 @@
                         android:name="com.google.android.gms.maps.SupportMapFragment"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        tools:context="com.example.currentplacedetailsonmap.MapsActivityCurrentPlace" />
+                        tools:context="com.bookaroom.activities.HostActivity" />
 
                     <ImageView
                         android:id="@+id/transparent_image"
