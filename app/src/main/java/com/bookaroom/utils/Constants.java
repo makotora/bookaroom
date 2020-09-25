@@ -27,6 +27,11 @@ public class Constants {
     public static final Bitmap.CompressFormat LISTING_PICTURE_BITMAP_COMPRESS_FORMAT =
             Bitmap.CompressFormat.PNG;
 
+    public static final int USER_PICTURE_QUALITY = 90;
+    public static final String USER_PICTURE_EXTENSION = "png";
+    public static final Bitmap.CompressFormat USER_PICTURE_BITMAP_COMPRESS_FORMAT =
+            Bitmap.CompressFormat.PNG;
+
     public static final float DEFAULT_MAP_ZOOM = 20;
     public static final String DEFAULT_COUNTRY = "GR";
 

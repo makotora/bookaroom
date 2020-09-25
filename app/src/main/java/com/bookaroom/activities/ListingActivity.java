@@ -24,6 +24,7 @@ import android.widget.ViewFlipper;
 import com.bookaroom.R;
 import com.bookaroom.adapters.ListingImagesPagerAdapter;
 import com.bookaroom.models.ActionResponse;
+import com.bookaroom.models.ConversationCreationResponse;
 import com.bookaroom.models.ListingFullViewResponse;
 import com.bookaroom.models.ListingReviewRequest;
 import com.bookaroom.models.ReservationRequest;
@@ -31,11 +32,13 @@ import com.bookaroom.remote.ApiUtils;
 import com.bookaroom.remote.PicassoTrustAll;
 import com.bookaroom.remote.services.ListingReviewsService;
 import com.bookaroom.remote.services.ListingService;
+import com.bookaroom.remote.services.MessagesService;
 import com.bookaroom.utils.Constants;
 import com.bookaroom.utils.RequestUtils;
 import com.bookaroom.utils.ResponseUtils;
 import com.bookaroom.utils.Utils;
 import com.bookaroom.utils.navigation.NavigationUtils;
+import com.google.android.gms.common.api.Api;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -67,6 +70,7 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
 
     private ListingService listingService;
     private ListingReviewsService listingReviewsService;
+    private MessagesService messagesService;
 
     // Intent data
     private long listingId;
@@ -101,6 +105,7 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
 
     private ImageView hostImageView;
     private TextView tvViewHostProfileLink;
+    private Button messageHostButton;
 
     // Review form
     private RatingBar reviewRatingBar;
@@ -117,6 +122,7 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
 
         listingService = ApiUtils.getListingService(this);
         listingReviewsService = ApiUtils.getListingReviewsService(this);
+        messagesService = ApiUtils.getMessagesService(this);
 
         initializeIntentData();
 
@@ -177,6 +183,7 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
         reservationButton = findViewById(R.id.listing_reservation_button);
         hostImageView = findViewById(R.id.listing_host_image);
         tvViewHostProfileLink = findViewById(R.id.listing_host_view_link);
+        messageHostButton = findViewById(R.id.listing_message_host_button);
     }
 
     private void initializePicturePagerAdapter() {
@@ -242,7 +249,7 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
                 .memoryPolicy(MemoryPolicy.NO_CACHE).into(hostImageView);
 
         initializeReservationButton(lfvr.getIsAvailable());
-        initializeHostViewLink(lfvr.getHostId());
+        initializeHostView(lfvr.getHostId());
         initializeReviewForm(lfvr.getHasLastReservationPassed());
     }
 
@@ -420,11 +427,18 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
         reservationButton.setEnabled(false);
     }
 
-    private void initializeHostViewLink(Long hostId) {
+    private void initializeHostView(Long hostId) {
         tvViewHostProfileLink.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 viewHostProfile(hostId);
+            }
+        });
+
+        messageHostButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                messageHost(hostId);
             }
         });
     }
@@ -436,6 +450,29 @@ public class ListingActivity extends AppCompatActivity implements OnMapReadyCall
         }
 
         NavigationUtils.startHostProfileActivity(this, hostId);
+    }
+
+    private void messageHost(Long hostId) {
+        Call call = messagesService.getOrCreateConversation(hostId);
+        call.enqueue(new Callback<ConversationCreationResponse>() {
+            @Override
+            public void onResponse(
+                    Call<ConversationCreationResponse> call,
+                    Response<ConversationCreationResponse> response) {
+                handleConversationResponse(response.body());
+            }
+
+            @Override
+            public void onFailure(
+                    Call call,
+                    Throwable t) {
+
+            }
+        });
+    }
+
+    private void handleConversationResponse(ConversationCreationResponse conversationCreationResponse) {
+        NavigationUtils.startMessagesActivity(this, conversationCreationResponse.getConversationId());
     }
 
     private void initializeReviewForm(boolean hasLastReservationPassed) {

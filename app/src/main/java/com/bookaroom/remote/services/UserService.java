@@ -3,6 +3,7 @@ package com.bookaroom.remote.services;
 import com.bookaroom.models.ActionResponse;
 import com.bookaroom.models.BooleanResponse;
 import com.bookaroom.models.LoginRequest;
+import com.bookaroom.models.UserResponse;
 
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -39,9 +40,23 @@ public interface UserService {
                                   @Part(REGISTER_PART_ROLES) RequestBody userRole,
                                   @Part MultipartBody.Part userImage);
 
+    @Multipart
+    @POST(ENDPOINT_PATH + "/update")
+    Call<ActionResponse> update(@Part(REGISTER_PART_USERNAME) RequestBody username,
+                                  @Part(REGISTER_PART_PASSWORD) RequestBody password,
+                                  @Part(REGISTER_PART_NAME) RequestBody name,
+                                  @Part(REGISTER_PART_SURNAME) RequestBody surname,
+                                  @Part(REGISTER_PART_EMAIL) RequestBody email,
+                                  @Part(REGISTER_PART_PHONE) RequestBody phone,
+                                  @Part(REGISTER_PART_ROLES) RequestBody userRole,
+                                  @Part MultipartBody.Part userImage);
+
     @GET(ENDPOINT_PATH + "/userIsHost")
     Call<BooleanResponse> userIsHost();
 
     @GET(ENDPOINT_PATH + "/userHasListing")
     Call<BooleanResponse> userHasListing();
+
+    @GET(ENDPOINT_PATH + "/getCurrentUser")
+    Call<UserResponse> getCurrentUser();
 }

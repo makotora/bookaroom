@@ -251,6 +251,12 @@
                     android:textColor="@android:color/holo_blue_dark"
                     android:text="@string/listing_view_host"/>
 
+                <Button
+                    android:id="@+id/listing_message_host_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/listing_message_host"/>
+
                 <!-- REVIEW -->
                 <TextView
                     android:layout_width="wrap_content"

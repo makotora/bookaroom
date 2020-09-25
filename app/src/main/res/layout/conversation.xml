@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="15dp"
+    android:layout_marginBottom="15dp"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/conversation_userBName"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:layout_weight="0.20"/>
+
+    <ImageView
+        android:id="@+id/conversation_userBImage"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:layout_weight="0.30"
+        android:layout_gravity="left"/>
+
+    <TextView
+        android:id="@+id/conversation_lastMessageUserName"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:layout_weight="0.20"/>
+
+    <TextView
+        android:id="@+id/conversation_lastMessage"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:layout_weight="0.30"/>
+
+</LinearLayout>

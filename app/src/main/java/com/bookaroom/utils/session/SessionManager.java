@@ -14,6 +14,8 @@ public class SessionManager {
     private static final String USER_ROLE_KEY = "userRole";
     private static final String VIEW_MODE_KEY = "userRole";
 
+    public static Long conversationId;
+
     private static String authenticationToken;
     private static ViewMode viewMode;
     private static UserRole userRole;

@@ -2,16 +2,20 @@ package com.bookaroom.utils.navigation;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.Message;
 import android.view.MenuItem;
 
 import androidx.core.util.Consumer;
 
 import com.bookaroom.R;
+import com.bookaroom.activities.ConversationsActivity;
 import com.bookaroom.activities.HomeActivity;
 import com.bookaroom.activities.HostActivity;
 import com.bookaroom.activities.HostProfileActivity;
 import com.bookaroom.activities.ListingActivity;
 import com.bookaroom.activities.LoginActivity;
+import com.bookaroom.activities.MessagesActivity;
+import com.bookaroom.activities.ProfileActivity;
 import com.bookaroom.activities.RegisterActivity;
 import com.bookaroom.enums.UserRole;
 import com.bookaroom.enums.ViewMode;
@@ -38,6 +42,8 @@ public class NavigationUtils {
         Map<Integer, Class> initMap = new HashMap<>();
         initMap.put(R.id.nav_guest, HomeActivity.class);
         initMap.put(R.id.nav_host, HostActivity.class);
+        initMap.put(R.id.nav_messages, ConversationsActivity.class);
+        initMap.put(R.id.nav_profile, ProfileActivity.class);
         menuItemIdToActivity = Collections.unmodifiableMap(initMap);
     }
 
@@ -50,6 +56,12 @@ public class NavigationUtils {
                                                                    (Activity a) -> {}));
         initMap.put(HostProfileActivity.class, new ActivityNavigationInfo(MENU_ITEM_GUEST_POSITION,
                                                                       (Activity a) -> {}));
+        initMap.put(ConversationsActivity.class, new ActivityNavigationInfo(MENU_ITEM_MESSAGES_POSITION,
+                                                                          (Activity a) -> startConversationsActivity(a)));
+        initMap.put(MessagesActivity.class, new ActivityNavigationInfo(MENU_ITEM_MESSAGES_POSITION,
+                                                              (Activity a) -> {}));
+        initMap.put(ProfileActivity.class, new ActivityNavigationInfo(MENU_ITEM_PROFILE_POSITION,
+                                                                       (Activity a) -> startProfileActivity(a)));
         initMap.put(HostActivity.class, new ActivityNavigationInfo(MENU_ITEM_HOST_POSITION,
                                                                    (Activity a) -> handleHostActivityNavigation(a)));
         activityToNavigationInfo = Collections.unmodifiableMap(initMap);
@@ -199,5 +211,24 @@ public class NavigationUtils {
         hostProfileIntent.putExtra(HostProfileActivity.INTENT_EXTRA_HOST_ID_NAME, hostId);
 
         currentActivity.startActivity(hostProfileIntent);
+    }
+
+    public static void startConversationsActivity(Activity currentActivity) {
+        Intent conversationsIntent = new Intent(currentActivity, ConversationsActivity.class);
+        currentActivity.startActivity(conversationsIntent);
+    }
+
+    public static void startProfileActivity(Activity currentActivity) {
+        Intent conversationsIntent = new Intent(currentActivity, ProfileActivity.class);
+        currentActivity.startActivity(conversationsIntent);
+    }
+
+    public static void startMessagesActivity(Activity currentActivity, Long conversationId) {
+        Intent messagesIntent = new Intent(currentActivity, MessagesActivity.class);
+        messagesIntent.putExtra(MessagesActivity.INTENT_EXTRA_CONVERSATION_ID_NAME,
+                                new Long(conversationId));
+        SessionManager.conversationId = conversationId;
+
+        currentActivity.startActivity(messagesIntent);
     }
 }

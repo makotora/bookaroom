@@ -23,7 +23,7 @@ import retrofit2.http.Query;
 
 public interface ListingReviewsService {
     public static final String ENDPOINT_PATH = "/reviews";
-    
+
     @POST(ENDPOINT_PATH + "/addReview")
     Call<ActionResponse> addReview(
             @Body

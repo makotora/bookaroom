@@ -15,6 +15,7 @@
     <string name="register_email">Email:</string>
     <string name="register_phone">Phone Number:</string>
     <string name="register_button">Register</string>
+    <string name="update_profile_button">Update</string>
     <string name="register_empty_username">Please enter a username</string>
     <string name="register_empty_passwords">Please enter a password</string>
     <string name="register_passwords_dont_match">Passwords don\'t match</string>
@@ -109,4 +110,6 @@
     <string name="listing_category_review">Submit your review</string>
     <string name="listing_submit_review">Submit</string>
     <string name="listing_reserve">RESERVE</string>
+    <string name="listing_message_host">Message Host</string>
+    <string name="messages_send">Send</string>
 </resources>
