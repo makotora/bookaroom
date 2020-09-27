@@ -30,6 +30,6 @@ public interface ListingReviewsService {
             ListingReviewRequest listingReviewRequest);
 
     @GET(ENDPOINT_PATH + "/getByHostUserId")
-    Call<ListingReviewResponse> getByHostUserId(
+    Call<List<ListingReviewResponse>> getByHostUserId(
             @Query("hostUserId") Long hostUserId);
 }

@@ -106,6 +106,7 @@ public class MessagesActivity extends AppCompatActivity {
     }
 
     private void handleMessageSent(String message) {
+        edtSendMessage.setText("");
         initializeMessagesList();
     }
 

@@ -11,7 +11,7 @@
         android:layout_height="match_parent">
 
         <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-            android:id="@+id/listing_scrollView"
+            android:id="@+id/host_profile_scrollView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_above="@+id/bottom_navigation">
@@ -115,7 +115,7 @@
                     android:id="@+id/host_profile_reviews"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:scrollbars="horizontal"/>
+                    android:scrollbars="vertical"/>
 
 
             </LinearLayout>

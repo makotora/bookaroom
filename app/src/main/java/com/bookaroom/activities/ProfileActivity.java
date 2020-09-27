@@ -20,6 +20,7 @@ import androidx.core.app.ActivityCompat;
 
 import com.bookaroom.R;
 import com.bookaroom.enums.UserRole;
+import com.bookaroom.enums.ViewMode;
 import com.bookaroom.models.ActionResponse;
 import com.bookaroom.models.UserResponse;
 import com.bookaroom.remote.ApiUtils;
@@ -31,6 +32,8 @@ import com.bookaroom.utils.ImageUtils;
 import com.bookaroom.utils.RequestUtils;
 import com.bookaroom.utils.ResponseUtils;
 import com.bookaroom.utils.Utils;
+import com.bookaroom.utils.navigation.NavigationUtils;
+import com.bookaroom.utils.session.SessionManager;
 import com.squareup.picasso.MemoryPolicy;
 import com.squareup.picasso.NetworkPolicy;
 
@@ -65,6 +68,8 @@ public class ProfileActivity extends Activity {
         setContentView(R.layout.activity_profile);
 
         userService = ApiUtils.getUserService(this);
+
+        NavigationUtils.initializeBottomNavigationBar(this);
 
         initializeFormData();
         setOnClickListeners();
@@ -259,7 +264,20 @@ public class ProfileActivity extends Activity {
                     Response<ActionResponse> response) {
                 ResponseUtils.handleActionResponse(ProfileActivity.this,
                                                    response,
-                                                   (actionResponse) -> {},
+                                                   (actionResponse) -> {
+                                                        // Update user role in case it changed,
+                                                       // and bottom navigation bar in case it
+                                                       // needs to disallow access
+                                                       SessionManager.setUserRole(ProfileActivity.this, userRole);
+                                                       if (userRole == UserRole.Guest) {
+                                                           // Change view mode to Guest if new
+                                                           // role is Guest (in case he was a
+                                                           // host before)
+                                                           SessionManager.setViewMode(ProfileActivity.this,
+                                                                                      ViewMode.Guest);
+                                                       }
+                                                       NavigationUtils.initializeBottomNavigationBar(ProfileActivity.this);
+                                                   },
                                                    (actionResponse -> {
                                                    }));
             }

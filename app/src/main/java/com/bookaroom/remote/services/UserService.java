@@ -3,6 +3,7 @@ package com.bookaroom.remote.services;
 import com.bookaroom.models.ActionResponse;
 import com.bookaroom.models.BooleanResponse;
 import com.bookaroom.models.LoginRequest;
+import com.bookaroom.models.UserProfileResponse;
 import com.bookaroom.models.UserResponse;
 
 import okhttp3.MultipartBody;
@@ -13,6 +14,7 @@ import retrofit2.http.GET;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.Part;
+import retrofit2.http.Query;
 
 public interface UserService {
     String ENDPOINT_PATH = "/users";
@@ -59,4 +61,7 @@ public interface UserService {
 
     @GET(ENDPOINT_PATH + "/getCurrentUser")
     Call<UserResponse> getCurrentUser();
+
+    @GET(ENDPOINT_PATH + "/getUserProfile")
+    Call<UserProfileResponse> getUserProfile(@Query("userId") Long userId);
 }

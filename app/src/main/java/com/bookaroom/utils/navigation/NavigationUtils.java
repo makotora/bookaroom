@@ -147,12 +147,13 @@ public class NavigationUtils {
 
         bottomNavigationView.getMenu().getItem(MENU_ITEM_GUEST_POSITION).setVisible(false);
         bottomNavigationView.getMenu().getItem(MENU_ITEM_HOST_POSITION).setVisible(true);
+        bottomNavigationView.getMenu().getItem(MENU_ITEM_HOST_POSITION).setEnabled(userIsHost(navigationInitInfo));
+    }
 
+    private static boolean userIsHost(NavigationInitInfo navigationInitInfo) {
         Activity currentActivity = navigationInitInfo.getCurrentActivity();
         UserRole userRole = SessionManager.getUserRole(currentActivity);
-        if (userRole == UserRole.Guest) {
-            bottomNavigationView.getMenu().getItem(MENU_ITEM_HOST_POSITION).setEnabled(false);
-        }
+        return userRole == UserRole.Host;
     }
 
     public static void startRegisterActivity(Activity currentActivity) {

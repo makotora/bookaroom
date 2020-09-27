@@ -35,7 +35,7 @@ public class Constants {
     public static final float DEFAULT_MAP_ZOOM = 20;
     public static final String DEFAULT_COUNTRY = "GR";
 
-    public static boolean INITIALIZE_FORMS_WITH_TEST_DATA = true;
+    public static boolean INITIALIZE_FORMS_WITH_TEST_DATA = false;
 
     public static final String DEFAULT_DATE_FORMAT = "dd-MM-yyyy";
 
